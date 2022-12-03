@@ -18,10 +18,10 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import static com.github.texhnolyzze.jiraworklogplugin.Util.stripRemoteName;
 import static com.intellij.openapi.util.text.StringUtil.stripHtml;
 import static com.intellij.openapi.util.text.StringUtil.stripQuotesAroundValue;
 import static git4idea.branch.GitBranchUtil.stripRefsPrefix;
-import static com.github.texhnolyzze.jiraworklogplugin.Util.stripRemoteName;
 
 
 public class VcsHandler implements Notifications, PrePushHandler, BranchChangeListener {

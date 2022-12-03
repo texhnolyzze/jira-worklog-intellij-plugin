@@ -3,10 +3,8 @@ package com.github.texhnolyzze.jiraworklogplugin;
 import org.jetbrains.annotations.NotNull;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 class JiraIssue implements Comparable<JiraIssue> {
 

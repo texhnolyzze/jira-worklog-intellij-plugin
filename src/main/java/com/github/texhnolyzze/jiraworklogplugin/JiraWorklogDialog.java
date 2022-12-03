@@ -18,7 +18,8 @@ import java.awt.event.KeyListener;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.Duration;
-import java.util.*;
+import java.util.Arrays;
+import java.util.NavigableSet;
 
 import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
