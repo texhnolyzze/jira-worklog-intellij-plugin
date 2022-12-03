@@ -1,0 +1,68 @@
+<!-- Plugin Configuration File. Read more: https://plugins.jetbrains.com/docs/intellij/plugin-configuration-file.html -->
+<idea-plugin>
+    <!-- Unique identifier of the plugin. It should be FQN. It cannot be changed between the plugin versions. -->
+    <id>com.github.texhnolyzze.jira-worklog-plugin</id>
+
+    <!-- Public plugin name should be written in Title Case.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-name -->
+    <name>Jira Worklog</name>
+
+    <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
+    <vendor email="ilyaskarimullin1997@gmail.com" url="https://penisland.net/">MyImaginaryCorporation</vendor>
+
+    <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
+         Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
+         Guidelines: https://plugins.jetbrains.com/docs/marketplace/plugin-overview-page.html#plugin-description -->
+    <description><![CDATA[
+    This plugin listens for branch changes, git push and project close events
+    and provides a simple form, where you can log spent time in Jira.
+    For git push events notification need to be enabled.
+  ]]></description>
+
+    <!-- Product and plugin compatibility requirements.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-compatibility.html -->
+    <depends>com.intellij.modules.platform</depends>
+    <depends>Git4Idea</depends>
+
+
+    <!-- Extension points defined by the plugin.
+         Read more: https://plugins.jetbrains.com/docs/intellij/plugin-extension-points.html -->
+    <extensions defaultExtensionNs="com.intellij">
+        <postStartupActivity implementation="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogStartupActivity"/>
+        <projectCloseHandler implementation="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogProjectCloseHandler"/>
+        <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState"/>
+        <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.JiraClient"/>
+        <prePushHandler implementation="com.github.texhnolyzze.jiraworklogplugin.VcsHandler"/>
+        <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.TimerUpdater"/>
+    </extensions>
+    <projectListeners>
+        <listener class="com.github.texhnolyzze.jiraworklogplugin.VcsHandler"
+                  topic="com.intellij.openapi.vcs.BranchChangeListener"/>
+        <listener class="com.github.texhnolyzze.jiraworklogplugin.VcsHandler"
+                  topic="com.intellij.notification.Notifications"/>
+    </projectListeners>
+    <actions>
+        <group id="com.github.texhnolyzze.jiraworklogplugin" popup="true"
+               class="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginActionsGroup">
+            <action id="com.github.texhnolyzze.jiraworklogplugin.ShowWorklogDialogAction"
+                    class="com.github.texhnolyzze.jiraworklogplugin.ShowWorklogDialogAction" text="Show Worklog Dialog"/>
+            <action id="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnExit"
+                    class="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnExit"
+                    text="Show Dialog On Exit"/>
+            <action id="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnBranchChange"
+                    class="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnBranchChange"
+                    text="Show Dialog On Branch Change"/>
+            <action id="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnGitPush"
+                    class="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnGitPush"
+                    text="Show Dialog On Git Push"/>
+            <action id="com.github.texhnolyzze.jiraworklogplugin.PauseAllTimersAction"
+                    class="com.github.texhnolyzze.jiraworklogplugin.PauseAllTimersAction" text="Pause All Timers"/>
+            <action id="com.github.texhnolyzze.jiraworklogplugin.ResumeCurrentTimerAction"
+                    class="com.github.texhnolyzze.jiraworklogplugin.ResumeCurrentTimerAction" text="Resume Current Timer"/>
+            <action id="com.github.texhnolyzze.jiraworklogplugin.ResetCurrentTimerAction"
+                    class="com.github.texhnolyzze.jiraworklogplugin.ResetCurrentTimerAction" text="Reset Current Timer"/>
+            <separator/>
+            <add-to-group group-id="ToolsMenu"/>
+        </group>
+    </actions>
+</idea-plugin>
