@@ -2,7 +2,7 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import java.util.NavigableSet;
 
-class FindJiraIssuesResponse {
+public class FindJiraIssuesResponse {
 
     private final NavigableSet<JiraIssue> issues;
     private final String error;
@@ -26,6 +26,14 @@ class FindJiraIssuesResponse {
 
     public static FindJiraIssuesResponse error(final String error) {
         return new FindJiraIssuesResponse(null, error);
+    }
+
+    @Override
+    public String toString() {
+        return "FindJiraIssuesResponse{" +
+            "issues=" + issues +
+            ", error='" + error + '\'' +
+            '}';
     }
 
 }

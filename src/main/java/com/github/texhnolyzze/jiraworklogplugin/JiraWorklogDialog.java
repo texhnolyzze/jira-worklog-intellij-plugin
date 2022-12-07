@@ -19,14 +19,16 @@ import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.List;
 import java.util.NavigableSet;
+import java.util.stream.Collectors;
 
+import static java.util.function.Predicate.not;
 import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
 public class JiraWorklogDialog extends JDialog {
 
     private final transient Project project;
-    private final boolean pauseTimerAfterReset;
     private final String branchName;
 
     private JPanel contentPane;
@@ -55,11 +57,9 @@ public class JiraWorklogDialog extends JDialog {
 
     public JiraWorklogDialog(
         final @NotNull Project project,
-        final String branchName,
-        final boolean pauseTimerAfterReset
+        final String branchName
     ) {
         this.project = project;
-        this.pauseTimerAfterReset = pauseTimerAfterReset;
         this.branchName = branchName;
         setContentPane(contentPane);
         setModal(true);
@@ -278,10 +278,13 @@ public class JiraWorklogDialog extends JDialog {
         final char[] pass = password.getPassword();
         final String url = jiraUrl.getText();
         final String name = username.getText();
+        final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         final TodayWorklogSummaryResponse summary = client.getTodayWorklogSummary(
             url,
             name,
-            new String(pass)
+            new String(pass),
+            state.getWorklogSummaryGatherStrategy(),
+            state.getHowToDetermineWhenUserStartedWorkingOnIssue()
         );
         final boolean connectionOk;
         if (summary != null && StringUtils.isBlank(summary.getError())) {
@@ -289,7 +292,10 @@ public class JiraWorklogDialog extends JDialog {
             testConnectionResult.setForeground(JBColor.GREEN);
             logged.setText(String.valueOf(summary.getSpentPretty()));
             remained.setText(String.valueOf(summary.getRemainedToLogPretty()));
-            final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
+            final Duration timeSpentViaExternalWorklogs = findTimeSpentViaExternalWorklogs(summary);
+            if (timeSpentViaExternalWorklogs.compareTo(Duration.ZERO) > 0) {
+                adjustTimeSpentForExternalWorklogs(state, timeSpentViaExternalWorklogs);
+            }
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (state) {
                 state.setJiraUrl(url);
@@ -314,6 +320,49 @@ public class JiraWorklogDialog extends JDialog {
         testConnectionResult.setVisible(true);
         Arrays.fill(pass, (char) 0);
         return connectionOk;
+    }
+
+    private void adjustTimeSpentForExternalWorklogs(final JiraWorklogPluginState state, final Duration timeSpentViaExternalWorklogs) {
+        final Timer timer;
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (state) { // NOSONAR
+            timer = state.getTimer(branchName, project);
+        }
+        final Duration timerDuration = timer.toDuration();
+        final Duration adjusted = timerDuration.minus(timeSpentViaExternalWorklogs);
+        timeSpent.setText(Util.formatAsJiraDuration(adjusted));
+        timeSpentSinceLastWorklogAdded.setText(
+            "<html>" +
+                "You spent " + Util.formatAsJiraDuration(timerDuration) + " in " + branchName + " since you last logged from it.<br>" +
+                "Plugin also detected today worklogs that intersect with current branch timer, " +
+                "not created by it with total time " + Util.formatAsJiraDuration(timeSpentViaExternalWorklogs) + ".<br>" +
+                "This time was automatically subtracted from Time Spent" +
+            "</html>"
+        );
+    }
+
+    private Duration findTimeSpentViaExternalWorklogs(final TodayWorklogSummaryResponse summary) {
+        final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
+        Duration externalWorklogsTotal = Duration.ZERO;
+        //noinspection SynchronizationOnLocalVariableOrMethodParameter
+        synchronized (state) {
+            final List<UnitOfWork> currentBranchUnitsOfWork = state.getTimeSeries().stream().filter(
+                work -> work.getBranch().equals(branchName)
+            ).collect(Collectors.toList());
+            currentBranchUnitsOfWork.add(state.actualUnitOfWorkForBranch(branchName, project));
+            final List<JiraWorklog> externalWorklogs = summary.getWorklogs().stream().filter(
+                not(JiraWorklog::isIssuedByPlugin)
+            ).collect(Collectors.toList());
+            for (final UnitOfWork work : currentBranchUnitsOfWork) {
+                for (final JiraWorklog worklog : externalWorklogs) {
+                    final Duration intersection = work.findIntersection(worklog);
+                    if (intersection.compareTo(Duration.ZERO) > 0) {
+                        externalWorklogsTotal = externalWorklogsTotal.plus(intersection);
+                    }
+                }
+            }
+        }
+        return externalWorklogsTotal;
     }
 
     @NotNull
@@ -354,7 +403,8 @@ public class JiraWorklogDialog extends JDialog {
                         duration,
                         comment.getText(),
                         adjustEstimateSelectedItem instanceof AdjustEstimate ? ((AdjustEstimate) adjustEstimateSelectedItem) : null,
-                        adjustEstimateSelectedItem instanceof AdjustEstimate && ((AdjustEstimate) adjustEstimateSelectedItem).getAdjustmentDurationLabel() != null ? adjDuration : null
+                        adjustEstimateSelectedItem instanceof AdjustEstimate && ((AdjustEstimate) adjustEstimateSelectedItem).getAdjustmentDurationLabel() != null ? adjDuration : null,
+                        JiraWorklogPluginState.getInstance(project).getHowToDetermineWhenUserStartedWorkingOnIssue()
                     );
                     addWorklogError.setVisible(false);
                     if (response != null && StringUtils.isBlank(response.getError())) {
@@ -363,9 +413,7 @@ public class JiraWorklogDialog extends JDialog {
                         synchronized (state) {
                             final Timer timer = state.getTimer(branchName, project);
                             timer.reset(project);
-                            if (pauseTimerAfterReset) {
-                                timer.pause(project);
-                            }
+                            state.getTimeSeries().removeIf(work -> work.getBranch().equals(branchName));
                         }
                         dispose();
                     } else {

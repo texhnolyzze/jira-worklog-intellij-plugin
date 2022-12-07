@@ -2,6 +2,8 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 class AddWorklogRequest {
 
+    static final String PLUGIN_MARK = "Created by Jira Worklog Plugin\n";
+
     private final Long timeSpentSeconds;
     private final String comment;
     private final String started;
@@ -13,7 +15,7 @@ class AddWorklogRequest {
     ) {
         this.timeSpentSeconds = timeSpentSeconds;
         this.started = started;
-        this.comment = comment;
+        this.comment = comment == null ? PLUGIN_MARK : PLUGIN_MARK + comment;
     }
 
     public Long getTimeSpentSeconds() {
@@ -26,6 +28,15 @@ class AddWorklogRequest {
 
     public String getStarted() {
         return started;
+    }
+
+    @Override
+    public String toString() {
+        return "AddWorklogRequest{" +
+            "timeSpentSeconds=" + timeSpentSeconds +
+            ", comment='" + comment + '\'' +
+            ", started='" + started + '\'' +
+            '}';
     }
 
 }

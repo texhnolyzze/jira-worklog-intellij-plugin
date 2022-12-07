@@ -1,36 +1,57 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-class TodayWorklogSummaryResponse {
+import java.time.Duration;
+import java.util.List;
 
-    private final Integer minutesSpent;
+public class TodayWorklogSummaryResponse {
+
+    private static final Duration WORKDAY_DURATION = Duration.ofHours(8);
+
+    private final Duration timeSpent;
     private final String error;
+    private final List<JiraWorklog> worklogs;
 
     TodayWorklogSummaryResponse(
-        final Integer minutesSpent,
+        final Duration timeSpent,
+        final List<JiraWorklog> worklogs,
         final String error
     ) {
-        this.minutesSpent = minutesSpent;
+        this.timeSpent = timeSpent;
         this.error = error;
+        this.worklogs = worklogs;
     }
 
     public String getRemainedToLogPretty() {
-        return Util.minutesToJiraDuration(8 * 60 - minutesSpent);
+        return Util.formatAsJiraDuration(WORKDAY_DURATION.minus(timeSpent));
     }
 
     public String getSpentPretty() {
-        return Util.minutesToJiraDuration(minutesSpent);
+        return Util.formatAsJiraDuration(timeSpent);
     }
 
     public String getError() {
         return error;
     }
 
-    static TodayWorklogSummaryResponse success(final Integer minutesSpent) {
-        return new TodayWorklogSummaryResponse(minutesSpent, null);
+    public List<JiraWorklog> getWorklogs() {
+        return worklogs;
     }
 
-    static TodayWorklogSummaryResponse error(final String error) {
-        return new TodayWorklogSummaryResponse(null, error);
+    @Override
+    public String toString() {
+        return "TodayWorklogSummaryResponse{" +
+            "timeSpent=" + timeSpent +
+            ", error='" + error + '\'' +
+            ", worklogs=" + worklogs +
+            '}';
+    }
+
+    public static TodayWorklogSummaryResponse success(final Duration timeSpent, final List<JiraWorklog> worklogs) {
+        return new TodayWorklogSummaryResponse(timeSpent, worklogs, null);
+    }
+
+    public static TodayWorklogSummaryResponse error(final String error) {
+        return new TodayWorklogSummaryResponse(null, null, error);
     }
 
 }

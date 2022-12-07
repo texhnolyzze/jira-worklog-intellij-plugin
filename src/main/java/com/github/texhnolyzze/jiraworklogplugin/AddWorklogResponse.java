@@ -20,4 +20,11 @@ class AddWorklogResponse {
         return new AddWorklogResponse(error);
     }
 
+    @Override
+    public String toString() {
+        return "AddWorklogResponse{" +
+            "error='" + error + '\'' +
+            '}';
+    }
+
 }

@@ -2,11 +2,12 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import org.jetbrains.annotations.NotNull;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
 
-class JiraIssue implements Comparable<JiraIssue> {
+public class JiraIssue implements Comparable<JiraIssue> {
 
     private final String key;
     private final String summary;
@@ -68,12 +69,14 @@ class JiraIssue implements Comparable<JiraIssue> {
         return cmp;
     }
 
-    static class Criteria {
+    public static class Criteria {
 
         private String key;
         private String summary;
         private Collection<String> types;
         private Set<String> parents;
+        private LocalDate worklogDate;
+        private String worklogAuthor;
 
         public String getKey() {
             return key;
@@ -105,6 +108,34 @@ class JiraIssue implements Comparable<JiraIssue> {
 
         public void setParents(final Set<String> parents) {
             this.parents = parents;
+        }
+
+        public LocalDate getWorklogDate() {
+            return worklogDate;
+        }
+
+        public void setWorklogDate(final LocalDate worklogDate) {
+            this.worklogDate = worklogDate;
+        }
+
+        public String getWorklogAuthor() {
+            return worklogAuthor;
+        }
+
+        public void setWorklogAuthor(final String worklogAuthor) {
+            this.worklogAuthor = worklogAuthor;
+        }
+
+        @Override
+        public String toString() {
+            return "Criteria{" +
+                "key='" + key + '\'' +
+                ", summary='" + summary + '\'' +
+                ", types=" + types +
+                ", parents=" + parents +
+                ", worklogDate=" + worklogDate +
+                ", worklogAuthor='" + worklogAuthor + '\'' +
+                '}';
         }
 
     }

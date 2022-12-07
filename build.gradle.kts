@@ -1,6 +1,6 @@
 plugins {
     id("java")
-    id("org.jetbrains.intellij") version "1.9.0"
+    id("org.jetbrains.intellij") version "1.10.0"
 }
 
 group = "com.github.texhnolyzze"
@@ -20,7 +20,6 @@ intellij {
 }
 
 dependencies {
-    implementation("com.opencsv:opencsv:4.1")
 }
 
 tasks {

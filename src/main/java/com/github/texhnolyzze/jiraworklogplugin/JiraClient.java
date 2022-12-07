@@ -2,41 +2,42 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyEnum;
 import com.google.common.net.HttpHeaders;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.net.HTTPMethod;
-import com.opencsv.CSVReader;
 import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.io.ByteArrayInputStream;
+import java.io.IOException;
 import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.math.BigDecimal;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.*;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static com.github.texhnolyzze.jiraworklogplugin.Util.MINUTES_IN_HOUR;
 import static com.github.texhnolyzze.jiraworklogplugin.Util.formatAsJiraDuration;
 
 public class JiraClient {
 
     private static final Logger logger = Logger.getInstance(JiraClient.class);
 
-    private static final DateTimeFormatter WEEK_WORKLOG_STARTED_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy HH:mm");
     private static final DateTimeFormatter ADD_WORKLOG_STARTED_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'.000+0000'");
 
     public static final String JIRA_RESPONSE_CODE = "Jira response code: ";
@@ -53,6 +54,14 @@ public class JiraClient {
             build();
     }
 
+    public HttpClient getHttpClient() {
+        return httpClient;
+    }
+
+    public ObjectMapper getObjectMapper() {
+        return objectMapper;
+    }
+
     public static JiraClient getInstance(final Project project) {
         return project.getService(JiraClient.class);
     }
@@ -66,7 +75,8 @@ public class JiraClient {
         @NotNull final Duration timeSpent,
         @Nullable final String comment,
         @Nullable final AdjustEstimate adjustEstimate,
-        @Nullable final Duration adjustmentDuration
+        @Nullable final Duration adjustmentDuration,
+        @NotNull final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
             final HttpRequest request = HttpRequest.newBuilder().uri(
@@ -98,7 +108,11 @@ public class JiraClient {
                         new AddWorklogRequest(
                             Duration.ofMinutes(timeSpent.toMinutes()).toSeconds(),
                             comment,
-                            LocalDateTime.now(Clock.systemUTC()).format(ADD_WORKLOG_STARTED_FORMAT)
+                            LocalDateTime.now(Clock.systemUTC()).minus(
+                                how == WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS ?
+                                timeSpent :
+                                Duration.ZERO
+                            ).format(ADD_WORKLOG_STARTED_FORMAT)
                         )
                     ),
                     StandardCharsets.UTF_8
@@ -133,7 +147,8 @@ public class JiraClient {
         final String jiraUrl,
         final String username,
         final String password,
-        final JiraIssue.Criteria criteria
+        final JiraIssue.Criteria criteria,
+        final String... fields
     ) {
         try {
             final String jql = URLEncoder.encode(
@@ -146,7 +161,7 @@ public class JiraClient {
                     (jiraUrl.endsWith("/") ? "" : "/") +
                     "rest/api/2/search?" +
                     "jql=" + jql + "&" +
-                    "fields=key,summary,issuetype,timeestimate"
+                    "fields=" + (fields.length == 0 ? "key,summary,issuetype,timeestimate" : String.join(",", fields))
                 )
             ).
             header(HttpHeaders.AUTHORIZATION, getAuthorization(username, password)).
@@ -229,90 +244,98 @@ public class JiraClient {
                 ).collect(Collectors.joining(",", "(", ")"))
             );
         }
+        if (!StringUtils.isBlank(criteria.getWorklogAuthor())) {
+            conditions.add("worklogAuthor=" + criteria.getWorklogAuthor());
+        }
+        if (criteria.getWorklogDate() != null) {
+            conditions.add("worklogDate=" + criteria.getWorklogDate());
+        }
         return String.join(" and ", conditions);
     }
 
     public TodayWorklogSummaryResponse getTodayWorklogSummary(
         final String jiraUrl,
         final String username,
-        final String password
+        final String password,
+        final WorklogGatherStrategyEnum gatherType,
+        final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
+    ) {
+        return gatherType.create(this).get(jiraUrl, username, password, how);
+    }
+
+    public FindJiraWorklogsResponse findWorklogs(
+        @NotNull final String jiraUrl,
+        @NotNull final String username,
+        @NotNull final String password,
+        @NotNull final String issue,
+        @NotNull final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
-            final HttpResponse<byte[]> response = httpClient.send(
+            final HttpResponse<InputStream> response = httpClient.send(
                 HttpRequest.newBuilder().
                     uri(
                         new URI(
                             jiraUrl +
                             (jiraUrl.endsWith("/") ? "" : "/") +
-                            "rest/timesheet-gadget/1.0/timesheet.json?" +
-                            "csvExport=true&" +
-                            "page=1&" +
-                            "weekends=true&" +
-                            "targetUser=" + username + "&" +
-                            "showDetails=false&" +
-                            "reportingDay=2&" +
-                            "numOfWeeks=1&" +
-                            "offset=0"
+                            "rest/api/2/issue/" + issue + "/worklog"
                         )
                     ).
                     header(HttpHeaders.AUTHORIZATION, getAuthorization(username, password)).
                     build(),
-                HttpResponse.BodyHandlers.ofByteArray()
+                HttpResponse.BodyHandlers.ofInputStream()
             );
             if (response.statusCode() != 200) {
-                return TodayWorklogSummaryResponse.error(JIRA_RESPONSE_CODE + response.statusCode());
+                return new FindJiraWorklogsResponse(
+                    null,
+                    "Jira response code " + response.statusCode() + " when searching worklogs of issue " + issue
+                );
             }
-            final CSVReader reader = new CSVReader(new InputStreamReader(new ByteArrayInputStream(response.body())));
-            final String[] header = reader.readNext();
-            final int startedIdx = findStartedIdx(header);
-            final int hoursSpentIdx = findHoursSpentIdx(header);
-            final List<String[]> all = reader.readAll();
-            final LocalDate now = LocalDate.now(ZoneId.systemDefault());
-            BigDecimal total = BigDecimal.ZERO;
-            for (int i = 0; i < all.size() - 1; i++) {
-                final String[] row = all.get(i);
-                final String started = row[startedIdx];
-                final LocalDateTime time = LocalDateTime.parse(started, WEEK_WORKLOG_STARTED_FORMAT);
-                if (time.toLocalDate().compareTo(now) != 0) {
-                    continue;
-                }
-                final String hoursSpent = row[hoursSpentIdx].replace(',', '.');
-                total = total.add(new BigDecimal(hoursSpent));
-            }
-            final BigDecimal totalMinutesSpent = total.multiply(MINUTES_IN_HOUR);
-            return TodayWorklogSummaryResponse.success(totalMinutesSpent.intValue());
-        } catch (final Exception e) {
-            logger.error("Error getting today worklog summary", e);
+            //noinspection unchecked
+            final Map<String, Object> map = objectMapper.readValue(response.body(), Map.class);
+            return new FindJiraWorklogsResponse(convertWorklogs(issue, map, how), null);
+        } catch (IOException | InterruptedException | URISyntaxException e) {
+            logger.error("Error getting worklogs for issue " + issue, e);
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            return TodayWorklogSummaryResponse.error(ExceptionUtils.getRootCauseMessage(e));
+            throw new IllegalStateException(e);
         }
+    }
+
+    private List<JiraWorklog> convertWorklogs(
+        final String issue,
+        final Map<String, Object> map,
+        final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
+    ) {
+        //noinspection unchecked
+        final List<Map<String, Object>> worklogs = (List<Map<String, Object>>) map.get("worklogs");
+        final List<JiraWorklog> result = new ArrayList<>(worklogs.size());
+        for (final Map<String, Object> worklog : worklogs) {
+            final String started = (String) worklog.get("started");
+            final Number timeSpentSeconds = (Number) worklog.get("timeSpentSeconds");
+            //noinspection unchecked
+            final Map<String, Object> author = (Map<String, Object>) worklog.get("author");
+            result.add(
+                new JiraWorklog(
+                    started == null ?
+                    null :
+                    OffsetDateTime.parse(started.substring(0, 19) + "+" + started.substring(24, 26) + ":" + started.substring(26)).toZonedDateTime(),
+                    timeSpentSeconds == null ? null : Duration.ofSeconds(timeSpentSeconds.longValue()),
+                    issue,
+                    (String) worklog.get("comment"),
+                    author == null ? null : (String) author.get("key"),
+                    how
+                )
+            );
+        }
+        return result;
     }
 
     @NotNull
-    private String getAuthorization(final String username, final String password) {
+    public String getAuthorization(final String username, final String password) {
         return "Basic " + Base64.getEncoder().encodeToString(
             (username + ":" + password).getBytes(StandardCharsets.UTF_8)
         );
-    }
-
-    private int findHoursSpentIdx(final String[] header) {
-        for (int i = 0; i < header.length; i++) {
-            if (header[i].contains("(Hours)")) {
-                return i;
-            }
-        }
-        throw new IllegalStateException("Can't parse CSV: '(Hours)' header not found");
-    }
-
-    private int findStartedIdx(final String[] header) {
-        for (int i = 0; i < header.length; i++) {
-            if (header[i].equals("Started")) {
-                return i;
-            }
-        }
-        throw new IllegalStateException("Can't parse CSV: 'Started' header not found");
     }
 
 }

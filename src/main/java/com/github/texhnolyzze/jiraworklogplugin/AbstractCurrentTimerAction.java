@@ -21,10 +21,15 @@ public abstract class AbstractCurrentTimerAction extends AnAction {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             final Timer timer = state.getTimer(branch, project);
-            doAction(timer, project);
+            doAction(timer, project, branch, state);
         }
     }
 
-    protected abstract void doAction(final Timer timer, final Project project);
+    protected abstract void doAction(
+        @NotNull final Timer timer,
+        @NotNull final Project project,
+        @NotNull final String branch,
+        @NotNull final JiraWorklogPluginState state
+    );
 
 }

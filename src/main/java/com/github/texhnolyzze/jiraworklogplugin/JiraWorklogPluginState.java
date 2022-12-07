@@ -1,5 +1,7 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyEnum;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.project.Project;
@@ -9,10 +11,11 @@ import com.intellij.util.xmlb.annotations.Transient;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.time.Duration;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.util.*;
+import java.util.stream.Collectors;
 
 @State(name = "com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState")
 public class JiraWorklogPluginState implements PersistentStateComponent<JiraWorklogPluginState> {
@@ -26,6 +29,10 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
     private boolean showDialogOnBranchChange = true;
     private boolean showDialogOnGitPush = true;
     private boolean closed;
+    private WorklogGatherStrategyEnum worklogSummaryGatherStrategy = WorklogGatherStrategyEnum.TIMESHEET_GADGET;
+    private WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue = WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT;
+    @OptionTag(converter = UnitOfWork.UnitOfWorkListConverter.class)
+    private List<UnitOfWork> timeSeries;
 
     /**
      * Normally should be singleton
@@ -74,7 +81,10 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
     }
 
     public @NotNull Map<String, String> getCommitMessages() {
-        return commitMessages == null ? commitMessages = new HashMap<>() : commitMessages;
+        if (commitMessages == null) {
+            commitMessages = new HashMap<>();
+        }
+        return commitMessages;
     }
 
     public void setCommitMessages(@Nullable final Map<String, String> commitMessages) {
@@ -113,6 +123,33 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
         this.closed = closed;
     }
 
+    public WorklogGatherStrategyEnum getWorklogSummaryGatherStrategy() {
+        return worklogSummaryGatherStrategy;
+    }
+
+    public void setWorklogSummaryGatherStrategy(final WorklogGatherStrategyEnum worklogSummaryGatherStrategy) {
+        this.worklogSummaryGatherStrategy = worklogSummaryGatherStrategy;
+    }
+
+    public WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue getHowToDetermineWhenUserStartedWorkingOnIssue() {
+        return howToDetermineWhenUserStartedWorkingOnIssue;
+    }
+
+    public void setHowToDetermineWhenUserStartedWorkingOnIssue(final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue) {
+        this.howToDetermineWhenUserStartedWorkingOnIssue = howToDetermineWhenUserStartedWorkingOnIssue;
+    }
+
+    public @NotNull List<UnitOfWork> getTimeSeries() {
+        if (timeSeries == null) {
+            timeSeries = new ArrayList<>();
+        }
+        return timeSeries;
+    }
+
+    public void setTimeSeries(@Nullable final List<UnitOfWork> timeSeries) {
+        this.timeSeries = timeSeries == null ? new ArrayList<>() : timeSeries;
+    }
+
     @Override
     public @NotNull JiraWorklogPluginState getState() {
         return this;
@@ -125,6 +162,43 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
 
     public static JiraWorklogPluginState getInstance(final Project project) {
         return project.getService(JiraWorklogPluginState.class);
+    }
+
+    /**
+     * Method calculates time spent in last unit of work for {@code branch}.<br><br>
+     * If no previous units of work exists (meaning there was no branch changes, project closes or other events),
+     * then last unit of work is just now() - time spent in {@code branch}<br><br>
+     * If previous units of work exists, then we need to sum up all their durations and subtract it from time spent in {@code branch}
+     * <br><br>
+     */
+    public UnitOfWork actualUnitOfWorkForBranch(final String branch, final Project project) {
+        final List<UnitOfWork> branchUnitsOfWork = getTimeSeries().stream().filter(
+            work -> Objects.equals(work.getBranch(), branch)
+        ).collect(Collectors.toList());
+        final Timer timer = getTimer(branch, project);
+        final ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
+        if (branchUnitsOfWork.isEmpty()) {
+            final Duration timeSpent = timer.toDuration();
+            return new UnitOfWork(
+                branch,
+                now.minus(timeSpent),
+                timeSpent
+            );
+        } else {
+            final Duration totalSpentOnPreviousUnitsOfWork = branchUnitsOfWork.stream().map(
+                UnitOfWork::getDuration
+            ).reduce(Duration.ZERO, Duration::plus);
+            final Duration timeSpentOnActualUnitOfWork = timer.toDuration().minus(totalSpentOnPreviousUnitsOfWork);
+            return new UnitOfWork(
+                branch,
+                now.minus(timeSpentOnActualUnitOfWork),
+                timeSpentOnActualUnitOfWork
+            );
+        }
+    }
+
+    public void appendUnitOfWork(final UnitOfWork unitOfWork) {
+        getTimeSeries().add(unitOfWork);
     }
 
 }

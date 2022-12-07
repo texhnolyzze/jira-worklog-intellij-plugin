@@ -5,6 +5,7 @@ import git4idea.GitLocalBranch;
 import git4idea.repo.GitRemote;
 import git4idea.repo.GitRepository;
 import git4idea.repo.GitRepositoryManager;
+import org.apache.commons.collections.ComparatorUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
@@ -14,12 +15,14 @@ import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.time.Duration;
+import java.time.ZonedDateTime;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-final class Util {
+public final class Util {
 
     static final BigDecimal MINUTES_IN_HOUR = new BigDecimal(60);
 
@@ -43,10 +46,6 @@ final class Util {
         return null;
     }
 
-    static boolean containsJiraKey(final String str) {
-        return findJiraKey(str) != null;
-    }
-
     static boolean isJiraKey(final String key) {
         return !StringUtils.isBlank(key) && JIRA_KEY_PATTERN.matcher(key).matches();
     }
@@ -63,19 +62,18 @@ final class Util {
         final @NotNull Project project,
         final @NotNull String jiraKeyContent
     ) {
-        showWorklogDialog(project, jiraKeyContent, Util.getCurrentBranch(project), false);
+        showWorklogDialog(project, jiraKeyContent, Util.getCurrentBranch(project));
     }
 
     static void showWorklogDialog(
         final @NotNull Project project,
         final @NotNull String jiraKeyContent,
-        final @Nullable String branchName,
-        final boolean pauseTimerAfterReset
+        final @Nullable String branchName
     ) {
         if (StringUtils.isBlank(branchName)) {
             return;
         }
-        final JiraWorklogDialog dialog = new JiraWorklogDialog(project, branchName, pauseTimerAfterReset);
+        final JiraWorklogDialog dialog = new JiraWorklogDialog(project, branchName);
         dialog.pack();
         dialog.afterPack();
         dialog.init(findJiraKey(jiraKeyContent));
@@ -107,10 +105,6 @@ final class Util {
 
     static String formatAsJiraDuration(final Duration duration) {
         return duration.toHours() + "h " + duration.toMinutesPart() + "m";
-    }
-
-    static String minutesToJiraDuration(final Number minutes) {
-        return formatAsJiraDuration(Duration.ofMinutes(minutes.intValue()));
     }
 
     static boolean isJiraDuration(String duration) {
@@ -168,6 +162,21 @@ final class Util {
             return branch;
         }
         return branch.substring((remote + "/").length());
+    }
+
+    public static Duration getIntersection(
+        final ZonedDateTime start1,
+        final ZonedDateTime end1,
+        final ZonedDateTime start2,
+        final ZonedDateTime end2
+    ) {
+        final ZonedDateTime beginMax = (ZonedDateTime) ComparatorUtils.max(start1, start2, Comparator.naturalOrder());
+        final ZonedDateTime endMin = (ZonedDateTime) ComparatorUtils.min(end1, end2, Comparator.naturalOrder());
+        if (beginMax.compareTo(endMin) <= 0) {
+            return Duration.between(beginMax, endMin);
+        } else {
+            return Duration.ZERO;
+        }
     }
 
 }

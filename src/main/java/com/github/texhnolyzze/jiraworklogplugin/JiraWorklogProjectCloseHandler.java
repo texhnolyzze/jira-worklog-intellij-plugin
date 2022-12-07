@@ -29,9 +29,13 @@ public class JiraWorklogProjectCloseHandler implements ProjectCloseHandler {
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.getTimers().values().forEach(timer -> timer.pause(project));
+            if (branchName != null) {
+                state.appendUnitOfWork(state.actualUnitOfWorkForBranch(branchName, project));
+            }
         }
         if (branchName != null && state.isShowDialogOnExit()) {
-            Util.showWorklogDialog(project, branchName, branchName, true);
+            Util.showWorklogDialog(project, branchName, branchName);
+            state.getTimer(branchName, project).pause(project);
         }
         return true;
     }

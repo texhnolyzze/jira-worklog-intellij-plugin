@@ -2,6 +2,7 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.util.xmlb.Converter;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
@@ -21,6 +22,9 @@ final class Timer {
     private long updatedAt;
     private boolean paused;
 
+    /**
+     * Used only for new timers
+     */
     Timer(final Project project) {
         reset(project);
     }
@@ -81,7 +85,7 @@ final class Timer {
         final long diff = now - updatedAt;
         if (diff > 0) {
             final long offFactor = diff / updateInterval;
-            if (offFactor <= 6) {
+            if (offFactor < 6) {
                 total += diff;
             } else {
                 logger.info(String.format("Off factor is %s (greater than 6). Skipping this timer update", offFactor));
@@ -98,7 +102,16 @@ final class Timer {
         this.total += other.total;
     }
 
-    public static class TimerMapConverter extends com.intellij.util.xmlb.Converter<Map<String, Timer>> {
+    @Override
+    public String toString() {
+        return "Timer{" +
+            "total=" + total +
+            ", updatedAt=" + updatedAt +
+            ", paused=" + paused +
+            '}';
+    }
+
+    public static class TimerMapConverter extends Converter<Map<String, Timer>> {
 
         @Override
         public @Nullable Map<String, Timer> fromString(@NotNull final String value) {
