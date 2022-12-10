@@ -8,7 +8,7 @@
     <name>Jira Worklog</name>
 
     <!-- A displayed Vendor name or Organization ID displayed on the Plugins Page. -->
-    <vendor email="ilyaskarimullin1997@gmail.com" url="https://penisland.net/">texhnolyzze</vendor>
+    <vendor email="ilyaskarimullin1997@gmail.com" url="https://github.com/texhnolyzze">texhnolyzze</vendor>
 
     <!-- Description of the plugin displayed on the Plugin Page and IDE Plugin Manager.
          Simple HTML elements (text formatting, paragraphs, and lists) can be added inside of <![CDATA[ ]]> tag.
@@ -16,7 +16,9 @@
     <description><![CDATA[
     This plugin listens for branch changes, git push and project close events
     and provides a simple form, where you can log spent time in Jira.
-    For git push events notification need to be enabled.
+    For git push events notification need to be enabled.<br><br>
+
+    <a href="https://github.com/texhnolyzze/jira-worklog-intellij-plugin">Sources/Description</a>
   ]]></description>
 
     <!-- Product and plugin compatibility requirements.
@@ -34,6 +36,7 @@
         <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.JiraClient"/>
         <prePushHandler implementation="com.github.texhnolyzze.jiraworklogplugin.VcsHandler"/>
         <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.TimerUpdater"/>
+        <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogStartupActivity"/>
     </extensions>
     <projectListeners>
         <listener class="com.github.texhnolyzze.jiraworklogplugin.VcsHandler"

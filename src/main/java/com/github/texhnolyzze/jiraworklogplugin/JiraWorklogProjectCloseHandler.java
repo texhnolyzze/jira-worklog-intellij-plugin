@@ -37,6 +37,14 @@ public class JiraWorklogProjectCloseHandler implements ProjectCloseHandler {
             Util.showWorklogDialog(project, branchName, branchName);
             state.getTimer(branchName, project).pause(project);
         }
+        final TimerUpdater updater = TimerUpdater.getInstance(project);
+        if (updater != null) {
+            updater.cancel();
+        }
+        final JiraWorklogStartupActivity startupActivity = JiraWorklogStartupActivity.getInstance(project);
+        if (startupActivity != null) {
+            startupActivity.cancel();
+        }
         return true;
     }
 

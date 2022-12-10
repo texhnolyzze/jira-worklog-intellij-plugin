@@ -3,14 +3,22 @@ package com.github.texhnolyzze.jiraworklogplugin;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.vcs.changes.shelf.ShelveChangesManager;
+import com.intellij.serviceContainer.AlreadyDisposedException;
 import com.intellij.util.concurrency.AppExecutorUtil;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartupActivity {
 
     private static final Logger logger = Logger.getInstance(JiraWorklogStartupActivity.class);
+
+    private ScheduledFuture<?> schedule;
+
+    public static JiraWorklogStartupActivity getInstance(final Project project) {
+        return project.getService(JiraWorklogStartupActivity.class);
+    }
 
     @Override
     public void runActivity(@NotNull final Project project) {
@@ -30,7 +38,7 @@ public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartup
                 init(currentBranch, state, project);
             } else {
                 logger.info("Current branch not found. Scheduling periodic task, which will try to initialize it");
-                AppExecutorUtil.getAppScheduledExecutorService().schedule(
+                this.schedule = AppExecutorUtil.getAppScheduledExecutorService().schedule(
                     () -> initFromCurrentBranch(project),
                     5L,
                     TimeUnit.SECONDS
@@ -40,9 +48,16 @@ public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartup
         TimerUpdater.getInstance(project).setup(project);
     }
 
-    private static void initFromCurrentBranch(final @NotNull Project project) {
-        final String branch = Util.getCurrentBranch(project);
-        final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
+    private void initFromCurrentBranch(final @NotNull Project project) {
+        final String branch;
+        final JiraWorklogPluginState state;
+        try {
+            branch = Util.getCurrentBranch(project);
+            state = JiraWorklogPluginState.getInstance(project);
+        } catch (final AlreadyDisposedException ex) {
+            cancel();
+            return;
+        }
         if (branch != null) {
             logger.info(String.format("Found current branch %s inside periodic task", branch));
             //noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -59,7 +74,13 @@ public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartup
         }
     }
 
-    private static void init(
+    void cancel() {
+        if (schedule != null) {
+            schedule.cancel(true);
+        }
+    }
+
+    private void init(
         final String currentBranch,
         final JiraWorklogPluginState state,
         final @NotNull Project project

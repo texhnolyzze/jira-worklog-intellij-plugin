@@ -2,6 +2,7 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
+import com.intellij.serviceContainer.AlreadyDisposedException;
 import com.intellij.util.concurrency.AppExecutorUtil;
 
 import java.time.Clock;
@@ -9,6 +10,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
 import java.util.Set;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 public class TimerUpdater {
@@ -16,6 +18,7 @@ public class TimerUpdater {
     private static final Logger logger = Logger.getInstance(TimerUpdater.class);
 
     private int numUpdates;
+    private ScheduledFuture<?> schedule;
 
     static TimerUpdater getInstance(final Project project) {
         return project.getService(TimerUpdater.class);
@@ -23,9 +26,15 @@ public class TimerUpdater {
 
     void setup(final Project project) {
         final long updateInterval = Duration.ofSeconds(10).toNanos();
-        AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(
+        this.schedule = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(
             () -> {
-                final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
+                final JiraWorklogPluginState state;
+                try {
+                    state = JiraWorklogPluginState.getInstance(project);
+                } catch (final AlreadyDisposedException ex) {
+                    cancel();
+                    return;
+                }
                 //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (state) {
                     final Set<Timer> activeTimers = state.getActiveTimers();
@@ -75,6 +84,12 @@ public class TimerUpdater {
             TimeUnit.NANOSECONDS
         );
         logger.info("TimerUpdater setup");
+    }
+
+    void cancel() {
+        if (this.schedule != null) {
+            this.schedule.cancel(true);
+        }
     }
 
 }
