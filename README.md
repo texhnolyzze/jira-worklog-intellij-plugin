@@ -156,3 +156,5 @@ If it exceeds, such an update is skipped.
 * Jira Rest Api version 2 is required
 
 * The plugin marks each worklog it creates by adding a `Created by Jira Worklog Plugin` to the beginning of the comment 
+
+* RestApiV2 worklog gather strategy will not work if you work logged to Jira Issue that contains >1000 worklogs. It's Jira's bug https://jira.atlassian.com/browse/JRACLOUD-73630. Although in the link it is about `startedAfter` parameter not working, any parameter described in API's documentation https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-worklogs/ doesn't work.
