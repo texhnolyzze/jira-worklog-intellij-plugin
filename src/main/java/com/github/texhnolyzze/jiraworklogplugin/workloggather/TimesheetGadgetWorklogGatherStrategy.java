@@ -41,11 +41,11 @@ class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
                     uri(
                         new URI(
                             jiraUrl +
-                                (jiraUrl.endsWith("/") ? "" : "/") +
-                                "rest/timesheet-gadget/1.0/raw-timesheet.json?" +
-                                "targetUser=" + username + "&" +
-                                "startDate=" + now + "&" +
-                                "endDate=" + now
+                            (jiraUrl.endsWith("/") ? "" : "/") +
+                            "rest/timesheet-gadget/1.0/raw-timesheet.json?" +
+                            "targetUser=" + username + "&" +
+                            "startDate=" + now + "&" +
+                            "endDate=" + now
                         )
                     ).
                     header(HttpHeaders.AUTHORIZATION, client.getAuthorization(username, password)).
@@ -80,16 +80,13 @@ class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
                     );
                 }
             }
-            return TodayWorklogSummaryResponse.success(
-                convertedWorklogs.stream().map(JiraWorklog::getTimeSpent).reduce(Duration.ZERO, Duration::plus),
-                convertedWorklogs
-            );
+            return TodayWorklogSummaryResponse.success(convertedWorklogs);
         } catch (final Exception e) {
             logger.error("Error getting today worklog summary", e);
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
             }
-            return TodayWorklogSummaryResponse.error(ExceptionUtils.getRootCauseMessage(e));
+            return TodayWorklogSummaryResponse.error("timesheet-gadget error: " + ExceptionUtils.getRootCauseMessage(e));
         }
     }
 

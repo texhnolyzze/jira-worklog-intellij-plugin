@@ -61,6 +61,8 @@
                         text="Rest Api V2 (Slow)"/>
                 <action class="com.github.texhnolyzze.jiraworklogplugin.workloggather.ChangeWorklogGatherStrategyAction$ToTimesheetGadget"
                         text="Timesheet Gadget (Fast)"/>
+                <action class="com.github.texhnolyzze.jiraworklogplugin.workloggather.ChangeWorklogGatherStrategyAction$ToTempoTimesheets"
+                        text="Tempo Timesheets (Fast)"/>
             </group>
             <group id="com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingActionGroup"
                    class="com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingActionGroup"

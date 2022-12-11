@@ -4,7 +4,6 @@ import com.github.texhnolyzze.jiraworklogplugin.*;
 import com.intellij.openapi.diagnostic.Logger;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
-import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -65,13 +64,10 @@ class RestApiV2WorklogGatherStrategy extends WorklogGatherStrategy {
                     }
                 }
             }
-            return TodayWorklogSummaryResponse.success(
-                worklogs.stream().map(JiraWorklog::getTimeSpent).reduce(Duration.ZERO, Duration::plus),
-                worklogs
-            );
+            return TodayWorklogSummaryResponse.success(worklogs);
         } catch (final Exception e) {
             logger.error("Error getting today worklog summary", e);
-            return TodayWorklogSummaryResponse.error(ExceptionUtils.getRootCauseMessage(e));
+            return TodayWorklogSummaryResponse.error("rest api v2 error: " + ExceptionUtils.getRootCauseMessage(e));
         }
     }
 

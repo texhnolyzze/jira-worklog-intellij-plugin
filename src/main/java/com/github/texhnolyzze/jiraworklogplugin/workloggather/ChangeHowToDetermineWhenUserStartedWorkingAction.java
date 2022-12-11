@@ -9,9 +9,9 @@ import org.jetbrains.annotations.NotNull;
 
 public abstract class ChangeHowToDetermineWhenUserStartedWorkingAction extends AnAction {
 
-    private final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how;
+    private final HowToDetermineWhenUserStartedWorkingOnIssue how;
 
-    protected ChangeHowToDetermineWhenUserStartedWorkingAction(final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how) {
+    protected ChangeHowToDetermineWhenUserStartedWorkingAction(final HowToDetermineWhenUserStartedWorkingOnIssue how) {
         this.how = how;
     }
 
@@ -45,13 +45,13 @@ public abstract class ChangeHowToDetermineWhenUserStartedWorkingAction extends A
 
     public static class LeaveAsIs extends ChangeHowToDetermineWhenUserStartedWorkingAction {
         public LeaveAsIs() {
-            super(WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS);
+            super(HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS);
         }
     }
 
     public static class SubtractFromStarted extends ChangeHowToDetermineWhenUserStartedWorkingAction {
         public SubtractFromStarted() {
-            super(WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT);
+            super(HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT);
         }
     }
 

@@ -55,4 +55,10 @@ public abstract class ChangeWorklogGatherStrategyAction extends AnAction {
         }
     }
 
+    public static class ToTempoTimesheets extends ChangeWorklogGatherStrategyAction {
+        public ToTempoTimesheets() {
+            super(WorklogGatherStrategyEnum.TEMPO_TIMESHEETS);
+        }
+    }
+
 }

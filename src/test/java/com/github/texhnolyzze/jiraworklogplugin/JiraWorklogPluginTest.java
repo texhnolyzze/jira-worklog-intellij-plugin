@@ -1,6 +1,6 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
 import com.intellij.openapi.project.Project;
 import com.intellij.testFramework.fixtures.BasePlatformTestCase;
 import com.intellij.util.ReflectionUtil;
@@ -72,7 +72,7 @@ public class JiraWorklogPluginTest extends BasePlatformTestCase {
                     "abc",
                     null,
                     null,
-                    WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS
+                    HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS
                 ),
                 new JiraWorklog(
                     ZonedDateTime.of(
@@ -84,7 +84,7 @@ public class JiraWorklogPluginTest extends BasePlatformTestCase {
                     "abc",
                     null,
                     null,
-                    WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS
+                    HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS
                 )
             ),
             null

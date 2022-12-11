@@ -2,7 +2,7 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyEnum;
 import com.google.common.net.HttpHeaders;
 import com.intellij.openapi.diagnostic.Logger;
@@ -76,7 +76,7 @@ public class JiraClient {
         @Nullable final String comment,
         @Nullable final AdjustEstimate adjustEstimate,
         @Nullable final Duration adjustmentDuration,
-        @NotNull final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
+        @NotNull final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
             final HttpRequest request = HttpRequest.newBuilder().uri(
@@ -109,7 +109,7 @@ public class JiraClient {
                             Duration.ofMinutes(timeSpent.toMinutes()).toSeconds(),
                             comment,
                             LocalDateTime.now(Clock.systemUTC()).minus(
-                                how == WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS ?
+                                how == HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS ?
                                 timeSpent :
                                 Duration.ZERO
                             ).format(ADD_WORKLOG_STARTED_FORMAT)
@@ -258,7 +258,7 @@ public class JiraClient {
         final String username,
         final String password,
         final WorklogGatherStrategyEnum gatherType,
-        final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
+        final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         return gatherType.create(this).get(jiraUrl, username, password, how);
     }
@@ -268,7 +268,7 @@ public class JiraClient {
         @NotNull final String username,
         @NotNull final String password,
         @NotNull final String issue,
-        @NotNull final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
+        @NotNull final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
             final HttpResponse<InputStream> response = httpClient.send(
@@ -305,7 +305,7 @@ public class JiraClient {
     private List<JiraWorklog> convertWorklogs(
         final String issue,
         final Map<String, Object> map,
-        final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
+        final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         //noinspection unchecked
         final List<Map<String, Object>> worklogs = (List<Map<String, Object>>) map.get("worklogs");

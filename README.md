@@ -71,7 +71,7 @@ Example:
 ![settings](docs-resources/settings.png)
 
 
-* Worklog Gather Strategy has two options:
+* Worklog Gather Strategy has three options:
 
 ![gather-strategy](docs-resources/gather-strategy.png)
 
@@ -84,6 +84,11 @@ if your Jira does not contain issues that have a lot of worklogs.
 
 The second option requires the Timesheet Reports & Gadgets plugin in Jira,
 but is significantly faster.
+
+The third option requires the Tempo Timesheets plugin. This functionality is not tested though, 
+because I have no access to Jira with Tempo plugin installed. If you find any problems, please create an issue.
+Especially I'm unsure about time zones returned from rest API of Tempo. 
+Are they all UTC or user-specific/server-specific? For now, it works in assumption that they all are UTC.
 
 
 * There is also a setting with a very long name (I really have no idea how to name it):

@@ -1,5 +1,7 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.time.Duration;
 import java.util.List;
 
@@ -46,8 +48,12 @@ public class TodayWorklogSummaryResponse {
             '}';
     }
 
-    public static TodayWorklogSummaryResponse success(final Duration timeSpent, final List<JiraWorklog> worklogs) {
-        return new TodayWorklogSummaryResponse(timeSpent, worklogs, null);
+    public static TodayWorklogSummaryResponse success(@NotNull final List<JiraWorklog> worklogs) {
+        return new TodayWorklogSummaryResponse(
+            worklogs.stream().map(JiraWorklog::getTimeSpent).reduce(Duration.ZERO, Duration::plus),
+            worklogs,
+            null
+        );
     }
 
     public static TodayWorklogSummaryResponse error(final String error) {

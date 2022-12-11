@@ -15,6 +15,12 @@ public enum WorklogGatherStrategyEnum {
         public WorklogGatherStrategy create(final JiraClient client) {
             return new TimesheetGadgetWorklogGatherStrategy(client);
         }
+    },
+    TEMPO_TIMESHEETS {
+        @Override
+        public WorklogGatherStrategy create(final JiraClient client) {
+            return new TempoTimesheetsWorklogGatherStrategy(client);
+        }
     };
 
     public abstract WorklogGatherStrategy create(final JiraClient client);

@@ -1,6 +1,6 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyEnum;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
@@ -30,7 +30,7 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
     private boolean showDialogOnGitPush = true;
     private boolean closed;
     private WorklogGatherStrategyEnum worklogSummaryGatherStrategy = WorklogGatherStrategyEnum.TIMESHEET_GADGET;
-    private WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue = WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT;
+    private HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue = HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT;
     @OptionTag(converter = UnitOfWork.UnitOfWorkListConverter.class)
     private List<UnitOfWork> timeSeries;
 
@@ -131,11 +131,11 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
         this.worklogSummaryGatherStrategy = worklogSummaryGatherStrategy;
     }
 
-    public WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue getHowToDetermineWhenUserStartedWorkingOnIssue() {
+    public HowToDetermineWhenUserStartedWorkingOnIssue getHowToDetermineWhenUserStartedWorkingOnIssue() {
         return howToDetermineWhenUserStartedWorkingOnIssue;
     }
 
-    public void setHowToDetermineWhenUserStartedWorkingOnIssue(final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue) {
+    public void setHowToDetermineWhenUserStartedWorkingOnIssue(final HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue) {
         this.howToDetermineWhenUserStartedWorkingOnIssue = howToDetermineWhenUserStartedWorkingOnIssue;
     }
 

@@ -1,6 +1,6 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -19,7 +19,7 @@ public class JiraWorklog {
         final String key,
         final String comment,
         final String author,
-        final WorklogGatherStrategy.HowToDetermineWhenUserStartedWorkingOnIssue how
+        final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         this.author = author;
         this.startTime = how.determine(startTime, timeSpent);
