@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.texhnolyzze"
-version = "1.4-SNAPSHOT"
+version = "1.3"
 
 repositories {
     mavenCentral()
@@ -20,6 +20,7 @@ intellij {
 }
 
 dependencies {
+    implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.14.0")
 }
 
 tasks {

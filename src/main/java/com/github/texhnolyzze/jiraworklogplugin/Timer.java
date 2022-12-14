@@ -1,24 +1,32 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.Converter;
-import com.vladsch.flexmark.ext.ins.Ins;
+import org.apache.commons.lang3.SerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import static java.lang.Boolean.parseBoolean;
-import static java.lang.Long.parseLong;
-
+@JsonIgnoreProperties(ignoreUnknown = true)
 final class Timer {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().
+        setSerializationInclusion(JsonInclude.Include.NON_NULL).
+        registerModule(new JavaTimeModule());
 
     private static final Logger logger = Logger.getInstance(Timer.class);
 
@@ -43,14 +51,16 @@ final class Timer {
         reset(project);
     }
 
-    public Timer(final String serialized) {
-        final String[] split = serialized.split(";");
-        this.total = parseLong(split[0]);
-        this.updatedAt = parseLong(split[1]);
-        this.paused = parseBoolean(split[2]);
-        this.updatedAtSinceEpoch = split.length > 3 ?
-                                   Instant.parse(split[3]) :
-                                   Instant.now(Clock.systemUTC());
+    @JsonCreator
+    public Timer(
+        @JsonProperty("total") final long total,
+        @JsonProperty("updatedAtSinceEpoch") final Instant updatedAtSinceEpoch,
+        @JsonProperty("paused") final boolean paused
+    ) {
+        this.total = total;
+        this.updatedAtSinceEpoch = updatedAtSinceEpoch;
+        this.paused = paused;
+        updatedAt = System.nanoTime();
     }
 
     void reset(final Project project) {
@@ -114,7 +124,15 @@ final class Timer {
         updatedAtSinceEpoch = Instant.now(Clock.systemUTC());
     }
 
-    Instant getUpdatedAtSinceEpoch() {
+    public long getTotal() {
+        return total;
+    }
+
+    public boolean isPaused() {
+        return paused;
+    }
+
+    public Instant getUpdatedAtSinceEpoch() {
         return updatedAtSinceEpoch;
     }
 
@@ -144,7 +162,16 @@ final class Timer {
                     continue;
                 }
                 final String key = keyValueSplit[0];
-                final Timer timer = new Timer(keyValueSplit[1]);
+                Timer timer;
+                try {
+                    timer = OBJECT_MAPPER.readValue(keyValueSplit[1], Timer.class);
+                } catch (JsonProcessingException e) {
+                    timer = new Timer(
+                        0,
+                        Instant.now(Clock.systemUTC()),
+                        true
+                    );
+                }
                 result.put(key, timer);
             }
             return result;
@@ -160,7 +187,11 @@ final class Timer {
     }
 
     private String serialize() {
-        return total + ";" + updatedAt + ";" + paused + ";" + updatedAtSinceEpoch;
+        try {
+            return OBJECT_MAPPER.writeValueAsString(this);
+        } catch (JsonProcessingException e) {
+            throw new SerializationException(e);
+        }
     }
 
 }
