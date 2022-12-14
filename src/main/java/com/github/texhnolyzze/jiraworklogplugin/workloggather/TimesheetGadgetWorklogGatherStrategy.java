@@ -53,7 +53,11 @@ class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
                 HttpResponse.BodyHandlers.ofInputStream()
             );
             if (response.statusCode() != 200) {
-                return TodayWorklogSummaryResponse.error("Jira response code " + response.statusCode() + " for /rest/timesheet-gadget/1.0/raw-timesheet.json");
+                return TodayWorklogSummaryResponse.error(
+                    "timesheet-gadget returned " + response.statusCode() + "<br>" +
+                    "Try to change worklog gather strategy<br>" +
+                    "Tools -> Jira Worklog Plugin -> Worklog Gather Strategy"
+                );
             }
             //noinspection unchecked
             final Map<String, Object> map = client.getObjectMapper().readValue(response.body(), Map.class);

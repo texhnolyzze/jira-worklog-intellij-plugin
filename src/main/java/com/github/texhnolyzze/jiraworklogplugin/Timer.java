@@ -3,10 +3,14 @@ package com.github.texhnolyzze.jiraworklogplugin;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.Converter;
+import com.vladsch.flexmark.ext.ins.Ins;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
+import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -19,8 +23,18 @@ final class Timer {
     private static final Logger logger = Logger.getInstance(Timer.class);
 
     private long total;
-    private long updatedAt;
     private boolean paused;
+
+    /**
+     * Used to measure elapsed time only
+     */
+    private long updatedAt;
+
+    /**
+     * Used to measure real time when timer was updated
+     * since we cannot use {@link System#nanoTime()} for this
+     */
+    private Instant updatedAtSinceEpoch;
 
     /**
      * Used only for new timers
@@ -33,12 +47,16 @@ final class Timer {
         final String[] split = serialized.split(";");
         this.total = parseLong(split[0]);
         this.updatedAt = parseLong(split[1]);
-        paused = parseBoolean(split[2]);
+        this.paused = parseBoolean(split[2]);
+        this.updatedAtSinceEpoch = split.length > 3 ?
+                                   Instant.parse(split[3]) :
+                                   Instant.now(Clock.systemUTC());
     }
 
     void reset(final Project project) {
         total = 0;
         updatedAt = System.nanoTime();
+        updatedAtSinceEpoch = Instant.now(Clock.systemUTC());
         paused = false;
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -75,6 +93,7 @@ final class Timer {
         }
         paused = false;
         updatedAt = System.nanoTime();
+        this.updatedAtSinceEpoch = Instant.now(Clock.systemUTC());
     }
 
     void update(final long updateInterval) {
@@ -92,10 +111,11 @@ final class Timer {
             }
         }
         updatedAt = now;
+        updatedAtSinceEpoch = Instant.now(Clock.systemUTC());
     }
 
-    long getUpdatedAt() {
-        return updatedAt;
+    Instant getUpdatedAtSinceEpoch() {
+        return updatedAtSinceEpoch;
     }
 
     public void transfer(final Timer other) {
@@ -107,6 +127,7 @@ final class Timer {
         return "Timer{" +
             "total=" + total +
             ", updatedAt=" + updatedAt +
+            ", updateAtSinceEpoc=" + updatedAtSinceEpoch +
             ", paused=" + paused +
             '}';
     }
@@ -139,7 +160,7 @@ final class Timer {
     }
 
     private String serialize() {
-        return total + ";" + updatedAt + ";" + paused;
+        return total + ";" + updatedAt + ";" + paused + ";" + updatedAtSinceEpoch;
     }
 
 }

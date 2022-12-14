@@ -59,7 +59,7 @@ public class TimerUpdater {
                         for (final Iterator<Timer> iterator = state.getTimers().values().iterator(); iterator.hasNext();) {
                             final Timer timer = iterator.next();
                             final Duration duration = Duration.between(
-                                Instant.ofEpochMilli(timer.getUpdatedAt()),
+                                timer.getUpdatedAtSinceEpoch(),
                                 Instant.now(Clock.systemUTC())
                             );
                             if (duration.toDays() > 7) {

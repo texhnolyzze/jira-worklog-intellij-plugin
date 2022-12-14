@@ -306,11 +306,13 @@ public class JiraWorklogDialog extends JDialog {
             connectionOk = true;
         } else {
             testConnectionResult.setText(
-                "Error" + (
-                    summary != null && !StringUtils.isBlank(summary.getError()) ?
-                    ": " + summary.getError() :
-                    ""
-                )
+                "<html>" +
+                    "Error" + (
+                        summary != null && !StringUtils.isBlank(summary.getError()) ?
+                        ": " + summary.getError() :
+                        ""
+                    ) +
+                "</html>"
             );
             testConnectionResult.setForeground(JBColor.RED);
             logged.setText(null);

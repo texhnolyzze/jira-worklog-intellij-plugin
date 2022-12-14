@@ -71,7 +71,9 @@ public class TempoTimesheetsWorklogGatherStrategy extends WorklogGatherStrategy 
             );
             if (response.statusCode() != 200) {
                 return TodayWorklogSummaryResponse.error(
-                    "tempo-timesheets returned " + response.statusCode()
+                    "tempo-timesheets returned " + response.statusCode() + "<br>" +
+                    "Try to change worklog gather strategy<br>" +
+                    "Tools -> Jira Worklog Plugin -> Worklog Gather Strategy"
                 );
             }
             //noinspection unchecked
