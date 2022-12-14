@@ -1,7 +1,5 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyEnum;
 import com.google.common.net.HttpHeaders;
@@ -32,6 +30,7 @@ import java.util.*;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
+import static com.github.texhnolyzze.jiraworklogplugin.Util.OBJECT_MAPPER;
 import static com.github.texhnolyzze.jiraworklogplugin.Util.formatAsJiraDuration;
 
 public class JiraClient {
@@ -43,10 +42,8 @@ public class JiraClient {
     public static final String JIRA_RESPONSE_CODE = "Jira response code: ";
 
     private final HttpClient httpClient;
-    private final ObjectMapper objectMapper;
 
     JiraClient() {
-        objectMapper = new ObjectMapper().setDefaultPropertyInclusion(JsonInclude.Include.NON_NULL);
         httpClient = HttpClient.newBuilder().
             version(HttpClient.Version.HTTP_1_1).
             followRedirects(HttpClient.Redirect.NEVER).
@@ -56,10 +53,6 @@ public class JiraClient {
 
     public HttpClient getHttpClient() {
         return httpClient;
-    }
-
-    public ObjectMapper getObjectMapper() {
-        return objectMapper;
     }
 
     public static JiraClient getInstance(final Project project) {
@@ -104,7 +97,7 @@ public class JiraClient {
             method(
                 HTTPMethod.POST.name(),
                 HttpRequest.BodyPublishers.ofString(
-                    objectMapper.writeValueAsString(
+                    OBJECT_MAPPER.writeValueAsString(
                         new AddWorklogRequest(
                             Duration.ofMinutes(timeSpent.toMinutes()).toSeconds(),
                             comment,
@@ -126,7 +119,7 @@ public class JiraClient {
             if (responseIsJson(response)) {
                 //noinspection unchecked
                 final @Nullable AddWorklogResponse errorMessages = tryErrorMessages(
-                    objectMapper.readValue(response.body(), Map.class),
+                    OBJECT_MAPPER.readValue(response.body(), Map.class),
                     AddWorklogResponse::error
                 );
                 if (errorMessages != null) {
@@ -171,7 +164,7 @@ public class JiraClient {
                 return FindJiraIssuesResponse.error(JIRA_RESPONSE_CODE + response.statusCode());
             }
             //noinspection unchecked
-            final Map<String, Object> map = objectMapper.readValue(response.body(), Map.class);
+            final Map<String, Object> map = OBJECT_MAPPER.readValue(response.body(), Map.class);
             final FindJiraIssuesResponse errorMessages = tryErrorMessages(map, FindJiraIssuesResponse::error);
             if (errorMessages != null) {
                 return errorMessages;
@@ -291,7 +284,7 @@ public class JiraClient {
                 );
             }
             //noinspection unchecked
-            final Map<String, Object> map = objectMapper.readValue(response.body(), Map.class);
+            final Map<String, Object> map = OBJECT_MAPPER.readValue(response.body(), Map.class);
             return new FindJiraWorklogsResponse(convertWorklogs(issue, map, how), null);
         } catch (IOException | InterruptedException | URISyntaxException e) {
             logger.error("Error getting worklogs for issue " + issue, e);

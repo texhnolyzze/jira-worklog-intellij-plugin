@@ -19,6 +19,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import static com.github.texhnolyzze.jiraworklogplugin.Util.OBJECT_MAPPER;
+
 class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
 
     private static final Logger logger = Logger.getInstance(TimesheetGadgetWorklogGatherStrategy.class);
@@ -54,13 +56,11 @@ class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
             );
             if (response.statusCode() != 200) {
                 return TodayWorklogSummaryResponse.error(
-                    "timesheet-gadget returned " + response.statusCode() + "<br>" +
-                    "Try to change worklog gather strategy<br>" +
-                    "Tools -> Jira Worklog Plugin -> Worklog Gather Strategy"
+                    "timesheet-gadget returned " + response.statusCode()
                 );
             }
             //noinspection unchecked
-            final Map<String, Object> map = client.getObjectMapper().readValue(response.body(), Map.class);
+            final Map<String, Object> map = OBJECT_MAPPER.readValue(response.body(), Map.class);
             //noinspection unchecked
             final List<Map<String, Object>> worklogs = (List<Map<String, Object>>) map.get("worklog");
             final ArrayList<JiraWorklog> convertedWorklogs = new ArrayList<>(worklogs.size());

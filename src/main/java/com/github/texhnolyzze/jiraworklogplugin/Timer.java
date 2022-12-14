@@ -2,11 +2,9 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.Converter;
@@ -19,14 +17,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 final class Timer {
-
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().
-        setSerializationInclusion(JsonInclude.Include.NON_NULL).
-        registerModule(new JavaTimeModule());
 
     private static final Logger logger = Logger.getInstance(Timer.class);
 
@@ -154,44 +147,22 @@ final class Timer {
 
         @Override
         public @Nullable Map<String, Timer> fromString(@NotNull final String value) {
-            final String[] values = value.split("\n");
-            final Map<String, Timer> result = new HashMap<>(values.length);
-            for (final String s : values) {
-                final String[] keyValueSplit = s.split("->");
-                if (keyValueSplit.length != 2) {
-                    continue;
-                }
-                final String key = keyValueSplit[0];
-                Timer timer;
-                try {
-                    timer = OBJECT_MAPPER.readValue(keyValueSplit[1], Timer.class);
-                } catch (JsonProcessingException e) {
-                    timer = new Timer(
-                        0,
-                        Instant.now(Clock.systemUTC()),
-                        true
-                    );
-                }
-                result.put(key, timer);
+            try {
+                return Util.OBJECT_MAPPER.readValue(value, new TypeReference<>() {});
+            } catch (JsonProcessingException e) {
+                return new HashMap<>(1);
             }
-            return result;
         }
 
         @Override
         public @Nullable String toString(@NotNull final Map<String, Timer> value) {
-            return value.entrySet().stream().map(
-                entry -> entry.getKey() + "->" + entry.getValue().serialize()
-            ).collect(Collectors.joining("\n"));
+            try {
+                return Util.OBJECT_MAPPER.writeValueAsString(value);
+            } catch (JsonProcessingException e) {
+                throw new SerializationException(e);
+            }
         }
 
-    }
-
-    private String serialize() {
-        try {
-            return OBJECT_MAPPER.writeValueAsString(this);
-        } catch (JsonProcessingException e) {
-            throw new SerializationException(e);
-        }
     }
 
 }

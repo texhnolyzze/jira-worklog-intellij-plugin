@@ -311,7 +311,9 @@ public class JiraWorklogDialog extends JDialog {
                         summary != null && !StringUtils.isBlank(summary.getError()) ?
                         ": " + summary.getError() :
                         ""
-                    ) +
+                    ) + "<br>" +
+                    "Try to change worklog gather strategy<br>" +
+                    "Tools -> Jira Worklog Plugin -> Worklog Gather Strategy" +
                 "</html>"
             );
             testConnectionResult.setForeground(JBColor.RED);

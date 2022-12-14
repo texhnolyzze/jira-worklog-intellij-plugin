@@ -1,14 +1,18 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.type.TypeReference;
 import com.intellij.util.xmlb.Converter;
+import org.apache.commons.lang3.SerializationException;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Represents user's unit of work in particular branch
@@ -30,21 +34,15 @@ public class UnitOfWork {
      */
     private final Duration duration;
 
+    @JsonCreator
     public UnitOfWork(
-        final String branch,
-        final ZonedDateTime started,
-        final Duration duration
+        @JsonProperty("branch") final String branch,
+        @JsonProperty("started") final ZonedDateTime started,
+        @JsonProperty("duration") final Duration duration
     ) {
         this.branch = branch;
         this.started = started;
         this.duration = duration;
-    }
-
-    public UnitOfWork(final String serialized) {
-        final String[] split = serialized.split("\\\\");
-        this.branch = split[0];
-        this.started = ZonedDateTime.parse(split[1]);
-        this.duration = Duration.parse(split[2]);
     }
 
     public String getBranch() {
@@ -85,14 +83,20 @@ public class UnitOfWork {
 
         @Override
         public @Nullable List<UnitOfWork> fromString(@NotNull final String value) {
-            return Arrays.stream(value.split("\n")).map(UnitOfWork::new).collect(Collectors.toList());
+            try {
+                return Util.OBJECT_MAPPER.readValue(value, new TypeReference<>() {});
+            } catch (JsonProcessingException e) {
+                return new ArrayList<>();
+            }
         }
 
         @Override
         public @Nullable String toString(@NotNull final List<UnitOfWork> value) {
-            return value.stream().map(
-                unit -> unit.getBranch() + "\\" + unit.getStarted() + "\\" + unit.getDuration()
-            ).collect(Collectors.joining("\n"));
+            try {
+                return Util.OBJECT_MAPPER.writeValueAsString(value);
+            } catch (JsonProcessingException e) {
+                throw new SerializationException(e);
+            }
         }
 
     }

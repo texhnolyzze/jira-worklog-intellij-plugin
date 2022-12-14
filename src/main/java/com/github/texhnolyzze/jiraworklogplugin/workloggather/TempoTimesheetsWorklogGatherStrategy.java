@@ -24,6 +24,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import static com.github.texhnolyzze.jiraworklogplugin.Util.OBJECT_MAPPER;
+
 public class TempoTimesheetsWorklogGatherStrategy extends WorklogGatherStrategy {
 
     private static final DateTimeFormatter TEMPO_DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(
@@ -59,7 +61,7 @@ public class TempoTimesheetsWorklogGatherStrategy extends WorklogGatherStrategy 
                     method(
                         "POST",
                         HttpRequest.BodyPublishers.ofString(
-                            client.getObjectMapper().writeValueAsString(
+                            OBJECT_MAPPER.writeValueAsString(
                                 request
                             )
                         )
@@ -71,13 +73,11 @@ public class TempoTimesheetsWorklogGatherStrategy extends WorklogGatherStrategy 
             );
             if (response.statusCode() != 200) {
                 return TodayWorklogSummaryResponse.error(
-                    "tempo-timesheets returned " + response.statusCode() + "<br>" +
-                    "Try to change worklog gather strategy<br>" +
-                    "Tools -> Jira Worklog Plugin -> Worklog Gather Strategy"
+                    "tempo-timesheets returned " + response.statusCode()
                 );
             }
             //noinspection unchecked
-            final List<Map<String, Object>> list = client.getObjectMapper().readValue(response.body(), List.class);
+            final List<Map<String, Object>> list = OBJECT_MAPPER.readValue(response.body(), List.class);
             final List<JiraWorklog> worklogs = new ArrayList<>(list.size());
             for (final Map<String, Object> worklog : list) {
                 final String startDate = (String) worklog.get("startDate");

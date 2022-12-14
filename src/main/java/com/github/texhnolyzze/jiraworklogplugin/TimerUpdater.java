@@ -9,6 +9,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -56,14 +57,20 @@ public class TimerUpdater {
                     if (numUpdates % 360 == 0) {
                         int numDeleted = 0;
                         logger.info("Deleting stale timers (paused for more than a week)");
-                        for (final Iterator<Timer> iterator = state.getTimers().values().iterator(); iterator.hasNext();) {
-                            final Timer timer = iterator.next();
+                        for (
+                            final Iterator<Map.Entry<String, Timer>> iterator = state.getTimers().entrySet().iterator();
+                            iterator.hasNext();
+                        ) {
+                            final Map.Entry<String, Timer> entry = iterator.next();
+                            final Timer timer = entry.getValue();
                             final Duration duration = Duration.between(
                                 timer.getUpdatedAtSinceEpoch(),
                                 Instant.now(Clock.systemUTC())
                             );
                             if (duration.toDays() > 7) {
                                 iterator.remove();
+                                state.getCommitMessages().remove(entry.getKey());
+                                state.getTimeSeries().removeIf(work -> work.getBranch().equals(entry.getKey()));
                                 state.getActiveTimers().remove(timer);
                                 numDeleted++;
                             }
