@@ -1,6 +1,8 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
+import com.intellij.openapi.util.NlsSafe;
+import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;
@@ -44,8 +46,8 @@ public class JiraWorklog {
         return comment;
     }
 
-    public boolean isIssuedByPlugin() {
-        return comment != null && comment.startsWith(AddWorklogRequest.PLUGIN_MARK);
+    public boolean isIssuedByPlugin(final @NotNull String projectName) {
+        return comment != null && comment.startsWith(AddWorklogRequest.getPluginMark(projectName));
     }
 
     public String getAuthor() {

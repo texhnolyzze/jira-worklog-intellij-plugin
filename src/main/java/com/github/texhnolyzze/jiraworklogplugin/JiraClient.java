@@ -42,8 +42,10 @@ public class JiraClient {
     public static final String JIRA_RESPONSE_CODE = "Jira response code: ";
 
     private final HttpClient httpClient;
+    private final Project project;
 
-    JiraClient() {
+    JiraClient(final Project project) {
+        this.project = project;
         httpClient = HttpClient.newBuilder().
             version(HttpClient.Version.HTTP_1_1).
             followRedirects(HttpClient.Redirect.NEVER).
@@ -99,6 +101,7 @@ public class JiraClient {
                 HttpRequest.BodyPublishers.ofString(
                     OBJECT_MAPPER.writeValueAsString(
                         new AddWorklogRequest(
+                            project.getName(),
                             Duration.ofMinutes(timeSpent.toMinutes()).toSeconds(),
                             comment,
                             LocalDateTime.now(Clock.systemUTC()).minus(

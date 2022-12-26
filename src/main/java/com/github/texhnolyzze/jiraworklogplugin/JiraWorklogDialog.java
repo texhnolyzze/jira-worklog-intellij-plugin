@@ -355,7 +355,7 @@ public class JiraWorklogDialog extends JDialog {
             ).collect(Collectors.toList());
             currentBranchUnitsOfWork.add(state.actualUnitOfWorkForBranch(branchName, project));
             final List<JiraWorklog> externalWorklogs = summary.getWorklogs().stream().filter(
-                not(JiraWorklog::isIssuedByPlugin)
+                not(worklog -> worklog.isIssuedByPlugin(project.getName()))
             ).collect(Collectors.toList());
             for (final UnitOfWork work : currentBranchUnitsOfWork) {
                 for (final JiraWorklog worklog : externalWorklogs) {
