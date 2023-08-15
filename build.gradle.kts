@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.texhnolyzze"
-version = "1.6-SNAPSHOT"
+version = "1.6"
 
 repositories {
     mavenCentral()
