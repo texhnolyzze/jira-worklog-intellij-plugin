@@ -67,7 +67,6 @@ public class JiraWorklogDialog extends JDialog {
         setDefaultCloseOperation(DO_NOTHING_ON_CLOSE);
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         final Timer timer;
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             timer = state.getTimer(branchName, project);
         }
@@ -296,7 +295,6 @@ public class JiraWorklogDialog extends JDialog {
             if (timeSpentViaExternalWorklogs.compareTo(Duration.ZERO) > 0) {
                 adjustTimeSpentForExternalWorklogs(state, timeSpentViaExternalWorklogs);
             }
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (state) {
                 state.setJiraUrl(url);
             }
@@ -348,7 +346,6 @@ public class JiraWorklogDialog extends JDialog {
     private Duration findTimeSpentViaExternalWorklogs(final TodayWorklogSummaryResponse summary) {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         Duration externalWorklogsTotal = Duration.ZERO;
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             final List<UnitOfWork> currentBranchUnitsOfWork = state.getTimeSeries().stream().filter(
                 work -> work.getBranch().equals(branchName)
@@ -413,7 +410,6 @@ public class JiraWorklogDialog extends JDialog {
                     addWorklogError.setVisible(false);
                     if (response != null && StringUtils.isBlank(response.getError())) {
                         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-                        //noinspection SynchronizationOnLocalVariableOrMethodParameter
                         synchronized (state) {
                             final Timer timer = state.getTimer(branchName, project);
                             timer.reset(project);

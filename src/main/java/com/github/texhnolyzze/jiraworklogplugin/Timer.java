@@ -62,7 +62,6 @@ final class Timer {
         updatedAtSinceEpoch = Instant.now(Clock.systemUTC());
         paused = false;
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.getActiveTimers().add(this);
         }
@@ -74,7 +73,6 @@ final class Timer {
 
     void pause(final Project project) {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.getActiveTimers().remove(this);
         }
@@ -87,7 +85,6 @@ final class Timer {
 
     void resume(final Project project) {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.getActiveTimers().add(this);
         }

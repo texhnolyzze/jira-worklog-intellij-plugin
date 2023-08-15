@@ -57,6 +57,11 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
 
     private final Project project;
 
+    @SuppressWarnings("unused")
+    public VcsHandler() {
+        this(null);
+    }
+
     public VcsHandler(final Project project) {
         this.project = project;
     }
@@ -88,7 +93,7 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
         for (int i = 0; i < 9; i++) {
             final String branch = pushMatcher.group("branch" + i);
             if (branch != null) {
-                final String strippedBranch = strip(branch);
+                final String strippedBranch = strip(branch, project);
                 logger.info(String.format("notify: Branch name: %s", strippedBranch));
                 final String message;
                 //noinspection SynchronizationOnLocalVariableOrMethodParameter
@@ -110,8 +115,8 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
 
     @SuppressWarnings("java:S2445")
     private void handleRename(final JiraWorklogPluginState state, final Matcher renameMatcher) {
-        final String srcBranch = strip(renameMatcher.group("srcBranch"));
-        final String targetBranch = strip(renameMatcher.group("targetBranch"));
+        final String srcBranch = strip(renameMatcher.group("srcBranch"), project);
+        final String targetBranch = strip(renameMatcher.group("targetBranch"), project);
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             final String currentBranch = Util.getCurrentBranch(project);
@@ -140,7 +145,7 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
     }
 
     private void handleDelete(final JiraWorklogPluginState state, final Matcher matcher) {
-        final String branch = strip(matcher.group("branch"));
+        final String branch = strip(matcher.group("branch"), project);
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) { // NOSONAR
             state.getTimeSeries().removeIf(work -> work.getBranch().equals(branch));
@@ -177,13 +182,17 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
     }
 
     @Override
-    public @NotNull Result handle(@NotNull final List<PushInfo> pushDetails, @NotNull final ProgressIndicator indicator) {
+    public @NotNull Result handle(
+        final @NotNull Project project,
+        @NotNull final List<PushInfo> pushDetails,
+        @NotNull final ProgressIndicator indicator
+    ) {
         if (!pushDetails.isEmpty()) {
             final PushInfo info = pushDetails.get(0);
             final PushSpec<PushSource, PushTarget> spec = info.getPushSpec();
             final String localBranchName = spec.getSource().toString();
             final String remoteBranchName = spec.getTarget().toString();
-            final String branch = strip(remoteBranchName);
+            final String branch = strip(remoteBranchName, project);
             logger.info(String.format("handle: Branch name: %s", localBranchName));
             final List<VcsFullCommitDetails> commits = info.getCommits();
             if (!commits.isEmpty()) {
@@ -221,7 +230,6 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
                 }
                 if (commitMessage != null) {
                     final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-                    //noinspection SynchronizationOnLocalVariableOrMethodParameter
                     synchronized (state) {
                         state.getCommitMessages().put(branch, commitMessage);
                     }
@@ -243,7 +251,6 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         final String lastBranch;
         final boolean showDialogOnBranchChange;
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             showDialogOnBranchChange = state.isShowDialogOnBranchChange();
             lastBranch = state.getLastBranch();
@@ -258,7 +265,6 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
         }
         final String currentBranch = Util.getCurrentBranch(project);
         if (currentBranch != null) {
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (state) {
                 final Timer currentBranchTimer = state.getTimer(currentBranch, project);
                 currentBranchTimer.resume(project);
@@ -267,7 +273,7 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
         }
     }
 
-    private String strip(final String branch) {
+    private String strip(final String branch, final Project project) {
         return stripRemoteName(stripRefsPrefix(stripQuotesAroundValue(branch)), project);
     }
 

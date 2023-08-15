@@ -36,7 +36,6 @@ public class TimerUpdater {
                     cancel();
                     return;
                 }
-                //noinspection SynchronizationOnLocalVariableOrMethodParameter
                 synchronized (state) {
                     final Set<Timer> activeTimers = state.getActiveTimers();
                     if (activeTimers.isEmpty()) {

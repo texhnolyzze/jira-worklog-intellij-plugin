@@ -15,7 +15,6 @@ public class PauseAllTimersAction extends AnAction {
         }
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         final String branch = Util.getCurrentBranch(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.getTimers().values().forEach(timer -> timer.pause(project));
             state.appendUnitOfWork(state.actualUnitOfWorkForBranch(branch, project));

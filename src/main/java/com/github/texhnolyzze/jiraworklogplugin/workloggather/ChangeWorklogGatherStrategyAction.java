@@ -2,6 +2,7 @@ package com.github.texhnolyzze.jiraworklogplugin.workloggather;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -22,7 +23,6 @@ public abstract class ChangeWorklogGatherStrategyAction extends AnAction {
             return;
         }
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.setWorklogSummaryGatherStrategy(strategy);
         }
@@ -41,6 +41,11 @@ public abstract class ChangeWorklogGatherStrategyAction extends AnAction {
         } else {
             e.getPresentation().setIcon(null);
         }
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     public static class ToRestApiV2 extends ChangeWorklogGatherStrategyAction {

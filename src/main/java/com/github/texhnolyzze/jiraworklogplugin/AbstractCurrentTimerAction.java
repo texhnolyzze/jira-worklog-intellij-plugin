@@ -18,7 +18,6 @@ public abstract class AbstractCurrentTimerAction extends AnAction {
             return;
         }
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             final Timer timer = state.getTimer(branch, project);
             doAction(timer, project, branch, state);

@@ -1,7 +1,6 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
-import com.intellij.openapi.util.NlsSafe;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;

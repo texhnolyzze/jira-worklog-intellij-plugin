@@ -2,6 +2,7 @@ package com.github.texhnolyzze.jiraworklogplugin.workloggather;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -22,10 +23,14 @@ public abstract class ChangeHowToDetermineWhenUserStartedWorkingAction extends A
             return;
         }
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.setHowToDetermineWhenUserStartedWorkingOnIssue(how);
         }
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     @Override

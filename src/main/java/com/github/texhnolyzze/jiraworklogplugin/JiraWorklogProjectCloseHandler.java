@@ -12,7 +12,6 @@ public class JiraWorklogProjectCloseHandler implements ProjectCloseHandler {
     @Override
     public boolean canClose(@NotNull final Project project) {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             if (state.isClosed()) {
                 return true;
@@ -26,7 +25,6 @@ public class JiraWorklogProjectCloseHandler implements ProjectCloseHandler {
                 branchName
             )
         );
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.getTimers().values().forEach(timer -> timer.pause(project));
             if (branchName != null) {

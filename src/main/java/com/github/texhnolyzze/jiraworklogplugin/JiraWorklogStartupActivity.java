@@ -2,15 +2,19 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.vcs.changes.shelf.ShelveChangesManager;
+import com.intellij.openapi.startup.ProjectActivity;
 import com.intellij.serviceContainer.AlreadyDisposedException;
 import com.intellij.util.concurrency.AppExecutorUtil;
+import kotlin.Unit;
+import kotlin.coroutines.Continuation;
 import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartupActivity {
+@SuppressWarnings("ExtensionRegisteredAsServiceOrComponent")
+public class JiraWorklogStartupActivity implements ProjectActivity {
 
     private static final Logger logger = Logger.getInstance(JiraWorklogStartupActivity.class);
 
@@ -20,11 +24,11 @@ public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartup
         return project.getService(JiraWorklogStartupActivity.class);
     }
 
+    @Nullable
     @Override
-    public void runActivity(@NotNull final Project project) {
+    public Object execute(@NotNull final Project project, @NotNull final Continuation<? super Unit> continuation) {
         logger.info("Executing Jira Worklog Plugin startup actions...");
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project).getState();
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.setClosed(false);
             final String currentBranch = Util.getCurrentBranch(project);
@@ -46,6 +50,7 @@ public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartup
             }
         }
         TimerUpdater.getInstance(project).setup(project);
+        return null;
     }
 
     private void initFromCurrentBranch(final @NotNull Project project) {
@@ -60,7 +65,6 @@ public class JiraWorklogStartupActivity extends ShelveChangesManager.PostStartup
         }
         if (branch != null) {
             logger.info(String.format("Found current branch %s inside periodic task", branch));
-            //noinspection SynchronizationOnLocalVariableOrMethodParameter
             synchronized (state) {
                 init(branch, state, project);
             }

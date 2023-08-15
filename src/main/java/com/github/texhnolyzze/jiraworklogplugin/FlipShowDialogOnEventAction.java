@@ -1,6 +1,7 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.intellij.icons.AllIcons;
+import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -18,7 +19,6 @@ public abstract class FlipShowDialogOnEventAction extends AnAction {
             return;
         }
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             final boolean value = get().test(state);
             set().accept(state, !value);
@@ -39,6 +39,11 @@ public abstract class FlipShowDialogOnEventAction extends AnAction {
         } else {
             e.getPresentation().setIcon(null);
         }
+    }
+
+    @Override
+    public @NotNull ActionUpdateThread getActionUpdateThread() {
+        return ActionUpdateThread.BGT;
     }
 
     protected abstract Predicate<JiraWorklogPluginState> get();

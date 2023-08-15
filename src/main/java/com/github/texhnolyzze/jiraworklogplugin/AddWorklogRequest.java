@@ -1,6 +1,5 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.intellij.openapi.util.NlsSafe;
 import org.jetbrains.annotations.NotNull;
 
 class AddWorklogRequest {

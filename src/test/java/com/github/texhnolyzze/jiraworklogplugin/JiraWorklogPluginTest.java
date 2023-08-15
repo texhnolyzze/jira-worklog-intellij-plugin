@@ -23,7 +23,6 @@ public class JiraWorklogPluginTest extends BasePlatformTestCase {
         );
         final LocalDate date = LocalDate.of(2022, 12, 7);
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
             state.appendUnitOfWork(
                 new UnitOfWork(
