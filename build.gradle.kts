@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.texhnolyzze"
-version = "1.6"
+version = "1.7-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -31,8 +31,8 @@ tasks {
     }
 
     patchPluginXml {
-        sinceBuild.set("221")
-        untilBuild.set("232.*")
+        sinceBuild.set("232.*")
+        untilBuild.set("233.*")
     }
 
     signPlugin {

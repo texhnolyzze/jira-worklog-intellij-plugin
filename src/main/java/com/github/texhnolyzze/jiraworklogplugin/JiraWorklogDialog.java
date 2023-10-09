@@ -34,6 +34,7 @@ public class JiraWorklogDialog extends JDialog {
     private JPanel contentPane;
     private JButton buttonOK;
     private JButton buttonCancel;
+    private JButton buttonReset;
     private JTextField comment;
     private JTextField timeSpent;
     private JTextField remained;
@@ -177,6 +178,7 @@ public class JiraWorklogDialog extends JDialog {
     private void setupListeners() {
         buttonCancel.addActionListener(unused -> onCancel());
         buttonOK.addActionListener(unused -> onOK());
+        buttonReset.addActionListener(unused -> onReset());
         addWindowListener(
             new WindowAdapter() {
                 @Override
@@ -241,6 +243,11 @@ public class JiraWorklogDialog extends JDialog {
                 updateEstimate();
             }
         );
+    }
+
+    private void onReset() {
+        TimerActionUtils.resetTimer(branchName, project);
+        dispose();
     }
 
     private void updateEstimate() {
