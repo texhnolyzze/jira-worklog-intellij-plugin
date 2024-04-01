@@ -1,6 +1,6 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
 
-class AddWorklogResponse {
+public class AddWorklogResponse {
 
     private final String error;
 
@@ -12,11 +12,11 @@ class AddWorklogResponse {
         return error;
     }
 
-    static AddWorklogResponse success() {
+    public static AddWorklogResponse success() {
         return new AddWorklogResponse(null);
     }
 
-    static AddWorklogResponse error(final String error) {
+    public static AddWorklogResponse error(final String error) {
         return new AddWorklogResponse(error);
     }
 

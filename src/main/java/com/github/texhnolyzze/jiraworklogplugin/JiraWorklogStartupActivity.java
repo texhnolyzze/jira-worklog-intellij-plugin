@@ -1,5 +1,8 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import com.github.texhnolyzze.jiraworklogplugin.timer.Timer;
+import com.github.texhnolyzze.jiraworklogplugin.timer.TimerUpdater;
+import com.github.texhnolyzze.jiraworklogplugin.utils.GitUtils;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.startup.ProjectActivity;
@@ -31,7 +34,7 @@ public class JiraWorklogStartupActivity implements ProjectActivity {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project).getState();
         synchronized (state) {
             state.setClosed(false);
-            final String currentBranch = Util.getCurrentBranch(project);
+            final String currentBranch = GitUtils.getCurrentBranch(project);
             if (currentBranch != null) {
                 logger.info(
                     String.format(
@@ -57,7 +60,7 @@ public class JiraWorklogStartupActivity implements ProjectActivity {
         final String branch;
         final JiraWorklogPluginState state;
         try {
-            branch = Util.getCurrentBranch(project);
+            branch = GitUtils.getCurrentBranch(project);
             state = JiraWorklogPluginState.getInstance(project);
         } catch (final AlreadyDisposedException ex) {
             cancel();

@@ -1,5 +1,7 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.action;
 
+import com.github.texhnolyzze.jiraworklogplugin.utils.GitUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.WorklogDialogUtils;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -14,9 +16,9 @@ public class ShowWorklogDialogAction extends AnAction {
         if (project == null) {
             return;
         }
-        final String currentBranch = Util.getCurrentBranch(project);
+        final String currentBranch = GitUtils.getCurrentBranch(project);
         if (currentBranch != null) {
-            Util.showWorklogDialog(project, currentBranch);
+            WorklogDialogUtils.showWorklogDialog(project, currentBranch);
         } else {
             JOptionPane.showMessageDialog(
                 null,

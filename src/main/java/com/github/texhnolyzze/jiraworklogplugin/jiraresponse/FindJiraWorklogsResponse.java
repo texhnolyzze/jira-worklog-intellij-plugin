@@ -1,4 +1,6 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
+
+import com.github.texhnolyzze.jiraworklogplugin.JiraWorklog;
 
 import java.util.List;
 

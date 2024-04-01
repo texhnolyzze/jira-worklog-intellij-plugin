@@ -1,10 +1,12 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.timer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
+import com.github.texhnolyzze.jiraworklogplugin.utils.Utils;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.xmlb.Converter;
@@ -19,7 +21,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
-final class Timer {
+public final class Timer {
 
     private static final Logger logger = Logger.getInstance(Timer.class);
 
@@ -40,7 +42,7 @@ final class Timer {
     /**
      * Used only for new timers
      */
-    Timer(final Project project) {
+    public Timer(final Project project) {
         reset(project);
     }
 
@@ -56,7 +58,7 @@ final class Timer {
         updatedAt = System.nanoTime();
     }
 
-    void reset(final Project project) {
+    public void reset(final Project project) {
         total = 0;
         updatedAt = System.nanoTime();
         updatedAtSinceEpoch = Instant.now(Clock.systemUTC());
@@ -67,11 +69,11 @@ final class Timer {
         }
     }
 
-    Duration toDuration() {
+    public Duration toDuration() {
         return Duration.ofNanos(total);
     }
 
-    void pause(final Project project) {
+    public void pause(final Project project) {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         synchronized (state) {
             state.getActiveTimers().remove(this);
@@ -83,7 +85,7 @@ final class Timer {
         return paused;
     }
 
-    void resume(final Project project) {
+    public void resume(final Project project) {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         synchronized (state) {
             state.getActiveTimers().add(this);
@@ -145,7 +147,7 @@ final class Timer {
         @Override
         public @Nullable Map<String, Timer> fromString(@NotNull final String value) {
             try {
-                return Util.OBJECT_MAPPER.readValue(value, new TypeReference<>() {});
+                return Utils.OBJECT_MAPPER.readValue(value, new TypeReference<>() {});
             } catch (JsonProcessingException e) {
                 return new HashMap<>(1);
             }
@@ -154,7 +156,7 @@ final class Timer {
         @Override
         public @Nullable String toString(@NotNull final Map<String, Timer> value) {
             try {
-                return Util.OBJECT_MAPPER.writeValueAsString(value);
+                return Utils.OBJECT_MAPPER.writeValueAsString(value);
             } catch (JsonProcessingException e) {
                 throw new SerializationException(e);
             }

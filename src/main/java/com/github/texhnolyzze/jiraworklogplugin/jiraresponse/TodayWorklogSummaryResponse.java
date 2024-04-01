@@ -1,5 +1,7 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
 
+import com.github.texhnolyzze.jiraworklogplugin.JiraWorklog;
+import com.github.texhnolyzze.jiraworklogplugin.utils.JiraDurationUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
@@ -24,11 +26,11 @@ public class TodayWorklogSummaryResponse {
     }
 
     public String getRemainedToLogPretty() {
-        return Util.formatAsJiraDuration(WORKDAY_DURATION.minus(timeSpent));
+        return JiraDurationUtils.formatAsJiraDuration(WORKDAY_DURATION.minus(timeSpent));
     }
 
     public String getSpentPretty() {
-        return Util.formatAsJiraDuration(timeSpent);
+        return JiraDurationUtils.formatAsJiraDuration(timeSpent);
     }
 
     public String getError() {

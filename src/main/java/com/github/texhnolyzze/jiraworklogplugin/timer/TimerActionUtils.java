@@ -1,16 +1,17 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.timer;
 
+import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
 import com.intellij.openapi.project.Project;
 
 import java.util.Objects;
 
-final class TimerActionUtils {
+public final class TimerActionUtils {
 
     private TimerActionUtils() {
         throw new UnsupportedOperationException();
     }
 
-    static void resetTimer(final String branch, final Project project) {
+    public static void resetTimer(final String branch, final Project project) {
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
         synchronized (state) {
             final Timer timer = state.getTimer(branch, project);
@@ -18,7 +19,7 @@ final class TimerActionUtils {
         }
     }
 
-    static void resetTimer(
+    public static void resetTimer(
         final String branch,
         final Project project,
         final Timer timer,

@@ -1,5 +1,8 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.action;
 
+import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
+import com.github.texhnolyzze.jiraworklogplugin.timer.Timer;
+import com.github.texhnolyzze.jiraworklogplugin.utils.GitUtils;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.project.Project;
@@ -13,7 +16,7 @@ public abstract class AbstractCurrentTimerAction extends AnAction {
         if (project == null) {
             return;
         }
-        final String branch = Util.getCurrentBranch(project);
+        final String branch = GitUtils.getCurrentBranch(project);
         if (branch == null) {
             return;
         }

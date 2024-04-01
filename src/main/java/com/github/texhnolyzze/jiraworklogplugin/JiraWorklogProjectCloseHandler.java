@@ -1,5 +1,8 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import com.github.texhnolyzze.jiraworklogplugin.timer.TimerUpdater;
+import com.github.texhnolyzze.jiraworklogplugin.utils.GitUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.WorklogDialogUtils;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.project.ProjectCloseHandler;
@@ -18,7 +21,7 @@ public class JiraWorklogProjectCloseHandler implements ProjectCloseHandler {
             }
             state.setClosed(true);
         }
-        final String branchName = Util.getCurrentBranch(project);
+        final String branchName = GitUtils.getCurrentBranch(project);
         logger.info(
             String.format(
                 "canClose: Branch name is %s",
@@ -32,7 +35,7 @@ public class JiraWorklogProjectCloseHandler implements ProjectCloseHandler {
             }
         }
         if (branchName != null && state.isShowDialogOnExit()) {
-            Util.showWorklogDialog(project, branchName, branchName);
+            WorklogDialogUtils.showWorklogDialog(project, branchName, branchName);
             state.getTimer(branchName, project).pause(project);
         }
         final TimerUpdater updater = TimerUpdater.getInstance(project);

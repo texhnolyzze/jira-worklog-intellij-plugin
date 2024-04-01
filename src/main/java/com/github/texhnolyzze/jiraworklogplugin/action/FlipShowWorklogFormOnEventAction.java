@@ -1,6 +1,6 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.action;
 
-import com.intellij.icons.AllIcons;
+import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -10,7 +10,7 @@ import org.jetbrains.annotations.NotNull;
 import java.util.function.BiConsumer;
 import java.util.function.Predicate;
 
-public abstract class FlipShowDialogOnEventAction extends AnAction {
+public abstract class FlipShowWorklogFormOnEventAction extends AnAction {
 
     @Override
     public void actionPerformed(@NotNull final AnActionEvent e) {
@@ -28,17 +28,7 @@ public abstract class FlipShowDialogOnEventAction extends AnAction {
     @Override
     public void update(@NotNull final AnActionEvent e) {
         super.update(e);
-        final Project project = e.getProject();
-        if (project == null) {
-            return;
-        }
-        final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
-        final boolean show = get().test(state);
-        if (show) {
-            e.getPresentation().setIcon(AllIcons.Actions.Checked);
-        } else {
-            e.getPresentation().setIcon(null);
-        }
+        FlipActionUpdateUtils.update(e, get());
     }
 
     @Override
@@ -49,7 +39,7 @@ public abstract class FlipShowDialogOnEventAction extends AnAction {
     protected abstract Predicate<JiraWorklogPluginState> get();
     protected abstract BiConsumer<JiraWorklogPluginState, Boolean> set();
 
-    public static class OnExit extends FlipShowDialogOnEventAction {
+    public static class OnExit extends FlipShowWorklogFormOnEventAction {
 
         @Override
         protected Predicate<JiraWorklogPluginState> get() {
@@ -63,7 +53,7 @@ public abstract class FlipShowDialogOnEventAction extends AnAction {
 
     }
 
-    public static class OnBranchChange extends FlipShowDialogOnEventAction {
+    public static class OnBranchChange extends FlipShowWorklogFormOnEventAction {
 
         @Override
         protected Predicate<JiraWorklogPluginState> get() {
@@ -77,7 +67,7 @@ public abstract class FlipShowDialogOnEventAction extends AnAction {
 
     }
 
-    public static class OnGitPush extends FlipShowDialogOnEventAction {
+    public static class OnGitPush extends FlipShowWorklogFormOnEventAction {
 
         @Override
         protected Predicate<JiraWorklogPluginState> get() {

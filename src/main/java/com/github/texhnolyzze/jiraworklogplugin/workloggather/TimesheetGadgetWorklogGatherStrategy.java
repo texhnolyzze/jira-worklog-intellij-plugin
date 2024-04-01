@@ -2,7 +2,8 @@ package com.github.texhnolyzze.jiraworklogplugin.workloggather;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraClient;
 import com.github.texhnolyzze.jiraworklogplugin.JiraWorklog;
-import com.github.texhnolyzze.jiraworklogplugin.TodayWorklogSummaryResponse;
+import com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.TodayWorklogSummaryResponse;
 import com.google.common.net.HttpHeaders;
 import com.intellij.openapi.diagnostic.Logger;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -19,9 +20,9 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.texhnolyzze.jiraworklogplugin.Util.OBJECT_MAPPER;
+import static com.github.texhnolyzze.jiraworklogplugin.utils.Utils.OBJECT_MAPPER;
 
-class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
+public class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
 
     private static final Logger logger = Logger.getInstance(TimesheetGadgetWorklogGatherStrategy.class);
 
@@ -31,10 +32,10 @@ class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
 
     @Override
     public TodayWorklogSummaryResponse get(
-        final String jiraUrl,
-        final String username,
-        final String password,
-        final HowToDetermineWhenUserStartedWorkingOnIssue how
+            final String jiraUrl,
+            final String email,
+            final String password,
+            final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
             final LocalDate now = LocalDate.now(ZoneId.systemDefault());
@@ -45,12 +46,12 @@ class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
                             jiraUrl +
                             (jiraUrl.endsWith("/") ? "" : "/") +
                             "rest/timesheet-gadget/1.0/raw-timesheet.json?" +
-                            "targetUser=" + username + "&" +
+                            "targetUser=" + email + "&" +
                             "startDate=" + now + "&" +
                             "endDate=" + now
                         )
                     ).
-                    header(HttpHeaders.AUTHORIZATION, client.getAuthorization(username, password)).
+                    header(HttpHeaders.AUTHORIZATION, client.getAuthorization(email, password)).
                     build(),
                 HttpResponse.BodyHandlers.ofInputStream()
             );
@@ -78,7 +79,7 @@ class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy {
                             Duration.ofSeconds(timeSpent.longValue()),
                             key,
                             comment,
-                            username,
+                            email,
                             how
                         )
                     );

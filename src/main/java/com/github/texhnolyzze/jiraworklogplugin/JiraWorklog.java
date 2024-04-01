@@ -1,6 +1,7 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
+import com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue;
+import com.github.texhnolyzze.jiraworklogplugin.jirarequest.AddWorklogRequest;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.Duration;
@@ -12,17 +13,17 @@ public class JiraWorklog {
     private final Duration timeSpent;
     private final String key;
     private final String comment;
-    private final String author;
+    private final String authorEmailAddress;
 
     public JiraWorklog(
         final ZonedDateTime startTime,
         final Duration timeSpent,
         final String key,
         final String comment,
-        final String author,
+        final String authorEmailAddress,
         final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
-        this.author = author;
+        this.authorEmailAddress = authorEmailAddress;
         this.startTime = how.determine(startTime, timeSpent);
         this.timeSpent = timeSpent;
         this.key = key;
@@ -49,8 +50,8 @@ public class JiraWorklog {
         return comment != null && comment.startsWith(AddWorklogRequest.getPluginMark(projectName));
     }
 
-    public String getAuthor() {
-        return author;
+    public String getAuthorEmailAddress() {
+        return authorEmailAddress;
     }
 
     @Override
@@ -60,7 +61,7 @@ public class JiraWorklog {
             ", timeSpent=" + timeSpent +
             ", key='" + key + '\'' +
             ", comment='" + comment + '\'' +
-            ", author='" + author + '\'' +
+            ", author='" + authorEmailAddress + '\'' +
             '}';
     }
 

@@ -1,6 +1,7 @@
-package com.github.texhnolyzze.jiraworklogplugin.workloggather;
+package com.github.texhnolyzze.jiraworklogplugin.action;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
+import com.github.texhnolyzze.jiraworklogplugin.enums.WorklogGatherStrategyEnum;
 import com.intellij.icons.AllIcons;
 import com.intellij.openapi.actionSystem.ActionUpdateThread;
 import com.intellij.openapi.actionSystem.AnAction;

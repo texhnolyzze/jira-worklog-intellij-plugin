@@ -1,6 +1,10 @@
-package com.github.texhnolyzze.jiraworklogplugin.workloggather;
+package com.github.texhnolyzze.jiraworklogplugin.enums;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraClient;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.RestApiV2WorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.TempoTimesheetsWorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.TimesheetGadgetWorklogGatherStrategy;
+import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
 
 public enum WorklogGatherStrategyEnum {
 

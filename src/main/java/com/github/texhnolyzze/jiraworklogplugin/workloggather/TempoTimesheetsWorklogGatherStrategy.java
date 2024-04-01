@@ -2,7 +2,8 @@ package com.github.texhnolyzze.jiraworklogplugin.workloggather;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraClient;
 import com.github.texhnolyzze.jiraworklogplugin.JiraWorklog;
-import com.github.texhnolyzze.jiraworklogplugin.TodayWorklogSummaryResponse;
+import com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.TodayWorklogSummaryResponse;
 import com.google.common.base.Preconditions;
 import com.google.common.net.HttpHeaders;
 import org.apache.commons.lang3.exception.ExceptionUtils;
@@ -24,7 +25,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import static com.github.texhnolyzze.jiraworklogplugin.Util.OBJECT_MAPPER;
+import static com.github.texhnolyzze.jiraworklogplugin.utils.Utils.OBJECT_MAPPER;
 
 public class TempoTimesheetsWorklogGatherStrategy extends WorklogGatherStrategy {
 
@@ -32,22 +33,22 @@ public class TempoTimesheetsWorklogGatherStrategy extends WorklogGatherStrategy 
         "yyyy-MM-dd HH:mm:ss.SSS"
     );
 
-    protected TempoTimesheetsWorklogGatherStrategy(final JiraClient client) {
+    public TempoTimesheetsWorklogGatherStrategy(final JiraClient client) {
         super(client);
     }
 
     @Override
     public TodayWorklogSummaryResponse get(
-        final String jiraUrl,
-        final String username,
-        final String password,
-        final HowToDetermineWhenUserStartedWorkingOnIssue how
+            final String jiraUrl,
+            final String email,
+            final String password,
+            final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
             final LocalDate now = LocalDate.now(ZoneId.systemDefault());
             final Request request = new Request(
                 now,
-                username
+                email
             );
             final HttpResponse<InputStream> response = client.getHttpClient().send(
                 HttpRequest.newBuilder().
@@ -67,7 +68,7 @@ public class TempoTimesheetsWorklogGatherStrategy extends WorklogGatherStrategy 
                         )
                     ).
                     header(HttpHeaders.CONTENT_TYPE, ContentType.APPLICATION_JSON.toString()).
-                    header(HttpHeaders.AUTHORIZATION, client.getAuthorization(username, password)).
+                    header(HttpHeaders.AUTHORIZATION, client.getAuthorization(email, password)).
                     build(),
                 HttpResponse.BodyHandlers.ofInputStream()
             );

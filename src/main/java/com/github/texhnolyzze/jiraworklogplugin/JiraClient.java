@@ -1,12 +1,15 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyEnum;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.github.texhnolyzze.jiraworklogplugin.enums.AdjustEstimate;
+import com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue;
+import com.github.texhnolyzze.jiraworklogplugin.enums.WorklogGatherStrategyEnum;
+import com.github.texhnolyzze.jiraworklogplugin.jirarequest.AddWorklogRequest;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.*;
 import com.google.common.net.HttpHeaders;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.util.net.HTTPMethod;
-import org.apache.commons.collections.CollectionUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.jetbrains.annotations.NotNull;
@@ -28,10 +31,10 @@ import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.*;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
-import static com.github.texhnolyzze.jiraworklogplugin.Util.OBJECT_MAPPER;
-import static com.github.texhnolyzze.jiraworklogplugin.Util.formatAsJiraDuration;
+import static com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS;
+import static com.github.texhnolyzze.jiraworklogplugin.utils.JiraDurationUtils.formatAsJiraDuration;
+import static com.github.texhnolyzze.jiraworklogplugin.utils.Utils.OBJECT_MAPPER;
 
 public class JiraClient {
 
@@ -40,6 +43,10 @@ public class JiraClient {
     private static final DateTimeFormatter ADD_WORKLOG_STARTED_FORMAT = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss'.000+0000'");
 
     public static final String JIRA_RESPONSE_CODE = "Jira response code: ";
+
+    public static final String DEFAULT_FIELDS = "key,summary,issuetype,timeestimate,assignee,status";
+
+    private static final String APPLICATION_JSON = "application/json";
 
     private final HttpClient httpClient;
     private final Project project;
@@ -62,9 +69,9 @@ public class JiraClient {
     }
 
     @SuppressWarnings("java:S3358")
-    public AddWorklogResponse addWorklog(
+    AddWorklogResponse addWorklog(
         @NotNull final String jiraUrl,
-        @NotNull final String username,
+        @NotNull final String email,
         @NotNull final String password,
         @NotNull final JiraIssue issue,
         @NotNull final Duration timeSpent,
@@ -74,47 +81,15 @@ public class JiraClient {
         @NotNull final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
-            final HttpRequest request = HttpRequest.newBuilder().uri(
-                new URI(
-                    jiraUrl +
-                    (jiraUrl.endsWith("/") ? "" : "/") +
-                    "rest/api/2/issue/" + issue.getKey() + "/worklog?" +
-                    (
-                        adjustEstimate == null ?
-                        "" :
-                        "adjustEstimate=" + adjustEstimate.getId() +
-                        (
-                            adjustEstimate.getAdjustmentDurationQueryParameter() == null ?
-                            "" :
-                            "&" + adjustEstimate.getAdjustmentDurationQueryParameter() + "=" + URLEncoder.encode(
-                                formatAsJiraDuration(Objects.requireNonNull(adjustmentDuration)),
-                                StandardCharsets.UTF_8
-                            )
-                        )
-                    )
-                )
-            ).
-            header(HttpHeaders.AUTHORIZATION, getAuthorization(username, password)).
-            header("Content-Type", "application/json").
-            method(
-                HTTPMethod.POST.name(),
-                HttpRequest.BodyPublishers.ofString(
-                    OBJECT_MAPPER.writeValueAsString(
-                        new AddWorklogRequest(
-                            project.getName(),
-                            Duration.ofMinutes(timeSpent.toMinutes()).toSeconds(),
-                            comment,
-                            LocalDateTime.now(Clock.systemUTC()).minus(
-                                how == HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS ?
-                                timeSpent :
-                                Duration.ZERO
-                            ).format(ADD_WORKLOG_STARTED_FORMAT)
-                        )
-                    ),
-                    StandardCharsets.UTF_8
-                )
-            ).
-            build();
+            final URI uri = addWorklogUri(jiraUrl, issue, adjustEstimate, adjustmentDuration);
+            final HttpRequest request =
+                    HttpRequest
+                            .newBuilder()
+                            .uri(uri)
+                            .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password))
+                            .header("Content-Type", APPLICATION_JSON)
+                            .method(HTTPMethod.POST.name(), addWorklogBody(timeSpent, comment, how))
+                            .build();
             final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() != 201 && !responseIsJson(response)) {
                 return AddWorklogResponse.error(JIRA_RESPONSE_CODE + response.statusCode());
@@ -140,28 +115,31 @@ public class JiraClient {
     }
 
     public FindJiraIssuesResponse findIssues(
-        final String jiraUrl,
-        final String username,
-        final String password,
-        final JiraIssue.Criteria criteria,
-        final String... fields
+            final String jiraUrl,
+            final String email,
+            final String password,
+            final JiraIssue.Criteria criteria,
+            final String... fields
     ) {
         try {
             final String jql = URLEncoder.encode(
                 toJql(criteria),
                 StandardCharsets.UTF_8
             );
-            final HttpRequest request = HttpRequest.newBuilder().uri(
-                new URI(
-                    jiraUrl +
-                    (jiraUrl.endsWith("/") ? "" : "/") +
-                    "rest/api/2/search?" +
-                    "jql=" + jql + "&" +
-                    "fields=" + (fields.length == 0 ? "key,summary,issuetype,timeestimate" : String.join(",", fields))
-                )
-            ).
-            header(HttpHeaders.AUTHORIZATION, getAuthorization(username, password)).
-            build();
+            final HttpRequest request =
+                HttpRequest
+                    .newBuilder()
+                    .uri(
+                        new URI(
+                            jiraUrl +
+                                (jiraUrl.endsWith("/") ? "" : "/") +
+                                "rest/api/2/search?" +
+                                "jql=" + jql + "&" +
+                                "fields=" + (fields.length == 0 ? DEFAULT_FIELDS : String.join(",", fields))
+                        )
+                    )
+                    .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password))
+                    .build();
             final HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() != 200 && !responseIsJson(response)) {
                 return FindJiraIssuesResponse.error(JIRA_RESPONSE_CODE + response.statusCode());
@@ -184,100 +162,36 @@ public class JiraClient {
         }
     }
 
-    private boolean responseIsJson(final HttpResponse<?> response) {
-        return response.headers().allValues("content-type").stream().anyMatch(s -> s.contains("application/json"));
-    }
-
-    @Nullable
-    private <T> T tryErrorMessages(
-        final Map<String, Object> map,
-        final Function<String, ? extends T> errorResponseFactory
-    ) {
-        if (map.get("errorMessages") != null) {
-            //noinspection unchecked
-            final List<String> errorMessages = (List<String>) map.get("errorMessages");
-            if (!errorMessages.isEmpty() && !StringUtils.isBlank(errorMessages.get(0))) {
-                return errorResponseFactory.apply(errorMessages.get(0));
-            }
-        }
-        return null;
-    }
-
-    private NavigableSet<JiraIssue> convert(final List<Map<String, Object>> issues) {
-        final NavigableSet<JiraIssue> result = new TreeSet<>(Comparator.naturalOrder());
-        for (final Map<String, Object> issue : issues) {
-            //noinspection unchecked
-            final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
-            //noinspection unchecked
-            final Map<String, Object> issueType = fields == null ? null : (Map<String, Object>) fields.get("issuetype");
-            result.add(
-                new JiraIssue(
-                    (String) issue.get("key"),
-                    fields == null ? null : (String) fields.get("summary"),
-                    issueType == null ? null : (String) issueType.get("name"),
-                    fields == null || fields.get("timeestimate") == null ? null : ((Number) fields.get("timeestimate")).intValue()
-                )
-            );
-        }
-        return result;
-    }
-
-    private String toJql(final JiraIssue.Criteria criteria) {
-        final List<String> conditions = new ArrayList<>();
-        if (!StringUtils.isBlank(criteria.getKey())) {
-            conditions.add("key=" + criteria.getKey().strip());
-        }
-        if (!CollectionUtils.isEmpty(criteria.getParents())) {
-            conditions.add("parent in " + criteria.getParents().stream().collect(Collectors.joining(",", "(", ")")));
-        }
-        if (!StringUtils.isBlank(criteria.getSummary())) {
-            conditions.add("summary~'" + criteria.getSummary() + "'");
-        }
-        if (!CollectionUtils.isEmpty(criteria.getTypes())) {
-            conditions.add(
-                "type in " + criteria.getTypes().stream().map(
-                    type -> "'" + type + "'"
-                ).collect(Collectors.joining(",", "(", ")"))
-            );
-        }
-        if (!StringUtils.isBlank(criteria.getWorklogAuthor())) {
-            conditions.add("worklogAuthor=" + criteria.getWorklogAuthor());
-        }
-        if (criteria.getWorklogDate() != null) {
-            conditions.add("worklogDate=" + criteria.getWorklogDate());
-        }
-        return String.join(" and ", conditions);
-    }
-
     public TodayWorklogSummaryResponse getTodayWorklogSummary(
-        final String jiraUrl,
-        final String username,
-        final String password,
-        final WorklogGatherStrategyEnum gatherType,
-        final HowToDetermineWhenUserStartedWorkingOnIssue how
+            final String jiraUrl,
+            final String email,
+            final String password,
+            final WorklogGatherStrategyEnum gatherType,
+            final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
-        return gatherType.create(this).get(jiraUrl, username, password, how);
+        return gatherType.create(this).get(jiraUrl, email, password, how);
     }
 
     public FindJiraWorklogsResponse findWorklogs(
         @NotNull final String jiraUrl,
-        @NotNull final String username,
+        @NotNull final String email,
         @NotNull final String password,
         @NotNull final String issue,
         @NotNull final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
         try {
             final HttpResponse<InputStream> response = httpClient.send(
-                HttpRequest.newBuilder().
-                    uri(
-                        new URI(
-                            jiraUrl +
-                            (jiraUrl.endsWith("/") ? "" : "/") +
-                            "rest/api/2/issue/" + issue + "/worklog"
+                HttpRequest
+                        .newBuilder()
+                        .uri(
+                                new URI(
+                                        jiraUrl +
+                                                (jiraUrl.endsWith("/") ? "" : "/") +
+                                                "rest/api/2/issue/" + issue + "/worklog"
+                                )
                         )
-                    ).
-                    header(HttpHeaders.AUTHORIZATION, getAuthorization(username, password)).
-                    build(),
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password))
+                        .build(),
                 HttpResponse.BodyHandlers.ofInputStream()
             );
             if (response.statusCode() != 200) {
@@ -296,6 +210,145 @@ public class JiraClient {
             }
             throw new IllegalStateException(e);
         }
+    }
+
+    @NotNull
+    public String getAuthorization(final String email, final String password) {
+        return "Basic " + Base64.getEncoder().encodeToString(
+            (email + ":" + password).getBytes(StandardCharsets.UTF_8)
+        );
+    }
+
+    private boolean responseIsJson(final HttpResponse<?> response) {
+        return response.headers().allValues("content-type").stream().anyMatch(s -> s.contains(APPLICATION_JSON));
+    }
+
+    @Nullable
+    private <T> T tryErrorMessages(
+        final Map<String, Object> map,
+        final Function<String, ? extends T> errorResponseFactory
+    ) {
+        if (map.get("errorMessages") != null) {
+            //noinspection unchecked
+            final List<String> errorMessages = (List<String>) map.get("errorMessages");
+            if (!errorMessages.isEmpty() && !StringUtils.isBlank(errorMessages.get(0))) {
+                return errorResponseFactory.apply(errorMessages.get(0));
+            }
+        }
+        return null;
+    }
+
+    @NotNull
+    private static URI addWorklogUri(
+            final @NotNull String jiraUrl,
+            final @NotNull JiraIssue issue,
+            final @Nullable AdjustEstimate adjustEstimate,
+            final @Nullable Duration adjustmentDuration
+    ) throws URISyntaxException {
+        final String adjustEstimatePart;
+        if (adjustEstimate == null) {
+            adjustEstimatePart = "";
+        } else {
+            final String adjustmentDurationPart =
+                    adjustEstimate.getAdjustmentDurationQueryParameter() == null
+                    ? ""
+                    : "&" + adjustEstimate.getAdjustmentDurationQueryParameter() + "=" + URLEncoder.encode(
+                            formatAsJiraDuration(Objects.requireNonNull(adjustmentDuration)),
+                            StandardCharsets.UTF_8
+                    );
+            adjustEstimatePart = "adjustEstimate=" + adjustEstimate.getId() + adjustmentDurationPart;
+        }
+        return new URI(
+                jiraUrl +
+                        (jiraUrl.endsWith("/") ? "" : "/") +
+                        "rest/api/2/issue/" + issue.getKey() + "/worklog?" +
+                        adjustEstimatePart
+        );
+    }
+
+    @NotNull
+    private HttpRequest.BodyPublisher addWorklogBody(
+            final @NotNull Duration timeSpent,
+            final @Nullable String comment,
+            final @NotNull HowToDetermineWhenUserStartedWorkingOnIssue how
+    ) throws JsonProcessingException {
+        return HttpRequest.BodyPublishers.ofString(
+                OBJECT_MAPPER.writeValueAsString(
+                        new AddWorklogRequest(
+                                project.getName(),
+                                Duration.ofMinutes(timeSpent.toMinutes()).toSeconds(),
+                                comment,
+                                LocalDateTime
+                                        .now(Clock.systemUTC())
+                                        .minus(how == LEAVE_AS_IS ? timeSpent : Duration.ZERO)
+                                        .format(ADD_WORKLOG_STARTED_FORMAT)
+                        )
+                ),
+                StandardCharsets.UTF_8
+        );
+    }
+
+    @SuppressWarnings("unchecked")
+    private NavigableSet<JiraIssue> convert(final List<Map<String, Object>> issues) {
+        final NavigableSet<JiraIssue> result = new TreeSet<>(Comparator.naturalOrder());
+        for (final Map<String, Object> issue : issues) {
+            final Map<String, Object> fields = (Map<String, Object>) issue.get("fields");
+            final Map<String, Object> issueType = fields == null ? null : (Map<String, Object>) fields.get("issuetype");
+            result.add(
+                new JiraIssue(
+                    (String) issue.get("key"),
+                    fields == null ? null : (String) fields.get("summary"),
+                    issueType == null ? null : (String) issueType.get("name"),
+                    fields == null || fields.get("timeestimate") == null ?
+                        null :
+                        ((Number) fields.get("timeestimate")).intValue(),
+                    fields == null || fields.get("assignee") == null ?
+                        null :
+                        (String) ((Map<String, Object>) fields.get("assignee")).get("key"),
+                    fields == null || fields.get("status") == null ?
+                        null :
+                        new JiraIssue.Status(
+                            (String) ((Map<String, Object>) fields.get("status")).get("id"),
+                            (String) ((Map<String, Object>) fields.get("status")).get("name")
+                        )
+                )
+            );
+        }
+        return result;
+    }
+
+    private String toJql(final JiraIssue.Criteria criteria) {
+        final List<String> conditions = new ArrayList<>();
+        if (!StringUtils.isBlank(criteria.getKey())) {
+            conditions.add("key=" + escapeJql(criteria.getKey().strip()));
+        }
+        if (!StringUtils.isBlank(criteria.getSummary())) {
+            conditions.add("summary~" + escapeJql(criteria.getSummary()));
+        }
+        if (!StringUtils.isBlank(criteria.getWorklogAuthor())) {
+            conditions.add("worklogAuthor=" + escapeJql(criteria.getWorklogAuthor()));
+        }
+        if (criteria.getWorklogDate() != null) {
+            conditions.add("worklogDate=" + criteria.getWorklogDate());
+        }
+        return String.join(" and ", conditions);
+    }
+
+    private String escapeJql(final String str) {
+        final StringBuilder res = new StringBuilder(str.length() + 2);
+        res.append("\"");
+        for (int i = 0, len = str.length(); i < len; i++) {
+            final char c = str.charAt(i);
+            if (c == '"') {
+                res.append("\\\"");
+            } else if (c == '\\') {
+                res.append("\\\\");
+            } else {
+                res.append(c);
+            }
+        }
+        res.append("\"");
+        return res.toString();
     }
 
     private List<JiraWorklog> convertWorklogs(
@@ -319,19 +372,12 @@ public class JiraClient {
                     timeSpentSeconds == null ? null : Duration.ofSeconds(timeSpentSeconds.longValue()),
                     issue,
                     (String) worklog.get("comment"),
-                    author == null ? null : (String) author.get("key"),
+                    author == null ? null : (String) author.get("emailAddress"),
                     how
                 )
             );
         }
         return result;
-    }
-
-    @NotNull
-    public String getAuthorization(final String username, final String password) {
-        return "Basic " + Base64.getEncoder().encodeToString(
-            (username + ":" + password).getBytes(StandardCharsets.UTF_8)
-        );
     }
 
 }

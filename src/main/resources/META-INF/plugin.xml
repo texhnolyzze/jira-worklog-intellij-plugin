@@ -35,7 +35,7 @@
         <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState"/>
         <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.JiraClient"/>
         <prePushHandler implementation="com.github.texhnolyzze.jiraworklogplugin.VcsHandler"/>
-        <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.TimerUpdater"/>
+        <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.timer.TimerUpdater"/>
         <projectService serviceImplementation="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogStartupActivity"/>
     </extensions>
     <projectListeners>
@@ -46,35 +46,39 @@
     </projectListeners>
     <actions>
         <group id="com.github.texhnolyzze.jiraworklogplugin" popup="true"
-               class="com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginActionGroup">
-            <action class="com.github.texhnolyzze.jiraworklogplugin.ShowWorklogDialogAction" text="Show Worklog Dialog"/>
-            <action class="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnExit"
-                    text="Show Dialog On Exit"/>
-            <action class="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnBranchChange"
-                    text="Show Dialog On Branch Change"/>
-            <action class="com.github.texhnolyzze.jiraworklogplugin.FlipShowDialogOnEventAction$OnGitPush"
-                    text="Show Dialog On Git Push"/>
-            <group id="com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyActionGroup"
-                   class="com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyActionGroup"
+               class="com.github.texhnolyzze.jiraworklogplugin.actiongroup.JiraWorklogPluginActionGroup">
+            <action class="com.github.texhnolyzze.jiraworklogplugin.action.ShowWorklogDialogAction" text="Show Worklog Dialog"/>
+            <group id="com.github.texhnolyzze.jiraworklogplugin.actiongroup.WhenToShowWorklogFormGroup"
+                   class="com.github.texhnolyzze.jiraworklogplugin.actiongroup.WhenToShowWorklogFormGroup"
                    popup="true">
-                <action class="com.github.texhnolyzze.jiraworklogplugin.workloggather.ChangeWorklogGatherStrategyAction$ToRestApiV2"
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.FlipShowWorklogFormOnEventAction$OnExit"
+                        text="On Exit"/>
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.FlipShowWorklogFormOnEventAction$OnBranchChange"
+                        text="On Branch Change"/>
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.FlipShowWorklogFormOnEventAction$OnGitPush"
+                        text="On Git Push"/>
+            </group>
+            <group id="com.github.texhnolyzze.jiraworklogplugin.actiongroup.WorklogGatherStrategyActionGroup"
+                   class="com.github.texhnolyzze.jiraworklogplugin.actiongroup.WorklogGatherStrategyActionGroup"
+                   popup="true">
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.ChangeWorklogGatherStrategyAction$ToRestApiV2"
                         text="Rest Api V2 (Slow)"/>
-                <action class="com.github.texhnolyzze.jiraworklogplugin.workloggather.ChangeWorklogGatherStrategyAction$ToTimesheetGadget"
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.ChangeWorklogGatherStrategyAction$ToTimesheetGadget"
                         text="Timesheet Gadget (Fast)"/>
-                <action class="com.github.texhnolyzze.jiraworklogplugin.workloggather.ChangeWorklogGatherStrategyAction$ToTempoTimesheets"
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.ChangeWorklogGatherStrategyAction$ToTempoTimesheets"
                         text="Tempo Timesheets (Fast)"/>
             </group>
-            <group id="com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingActionGroup"
-                   class="com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingActionGroup"
+            <group id="com.github.texhnolyzze.jiraworklogplugin.actiongroup.HowToDetermineWhenUserStartedWorkingActionGroup"
+                   class="com.github.texhnolyzze.jiraworklogplugin.actiongroup.HowToDetermineWhenUserStartedWorkingActionGroup"
                    popup="true">
-                <action class="com.github.texhnolyzze.jiraworklogplugin.workloggather.ChangeHowToDetermineWhenUserStartedWorkingAction$LeaveAsIs"
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.ChangeHowToDetermineWhenUserStartedWorkingAction$LeaveAsIs"
                         text="Leave 'Started' Unchanged"/>
-                <action class="com.github.texhnolyzze.jiraworklogplugin.workloggather.ChangeHowToDetermineWhenUserStartedWorkingAction$SubtractFromStarted"
+                <action class="com.github.texhnolyzze.jiraworklogplugin.action.ChangeHowToDetermineWhenUserStartedWorkingAction$SubtractFromStarted"
                         text="Subtract 'Time Spent' From 'Started'"/>
             </group>
-            <action class="com.github.texhnolyzze.jiraworklogplugin.PauseAllTimersAction" text="Pause All Timers"/>
-            <action class="com.github.texhnolyzze.jiraworklogplugin.ResumeCurrentTimerAction" text="Resume Current Timer"/>
-            <action class="com.github.texhnolyzze.jiraworklogplugin.ResetCurrentTimerAction" text="Reset Current Timer"/>
+            <action class="com.github.texhnolyzze.jiraworklogplugin.action.PauseAllTimersAction" text="Pause All Timers"/>
+            <action class="com.github.texhnolyzze.jiraworklogplugin.action.ResumeCurrentTimerAction" text="Resume Current Timer"/>
+            <action class="com.github.texhnolyzze.jiraworklogplugin.action.ResetCurrentTimerAction" text="Reset Current Timer"/>
             <separator/>
             <add-to-group group-id="ToolsMenu"/>
         </group>

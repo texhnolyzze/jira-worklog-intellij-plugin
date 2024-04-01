@@ -1,4 +1,4 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
 
 import java.util.NavigableSet;
 

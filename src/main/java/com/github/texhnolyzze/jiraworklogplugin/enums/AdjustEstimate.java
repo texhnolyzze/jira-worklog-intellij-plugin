@@ -1,11 +1,11 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.enums;
 
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
 import java.time.Duration;
 
-enum AdjustEstimate {
+public enum AdjustEstimate {
 
     NEW("new", "Sets the estimate to a specific value", "New estimate:", "newEstimate") {
         @Override

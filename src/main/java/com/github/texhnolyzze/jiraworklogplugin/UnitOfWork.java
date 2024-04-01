@@ -4,6 +4,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.github.texhnolyzze.jiraworklogplugin.utils.IntersectionUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.Utils;
 import com.intellij.util.xmlb.Converter;
 import org.apache.commons.lang3.SerializationException;
 import org.jetbrains.annotations.NotNull;
@@ -62,7 +64,7 @@ public class UnitOfWork {
     }
 
     public Duration findIntersection(final JiraWorklog worklog) {
-        return Util.getIntersection(
+        return IntersectionUtils.getIntersection(
             started,
             started.plus(duration),
             worklog.getStartTime(),
@@ -84,7 +86,7 @@ public class UnitOfWork {
         @Override
         public @Nullable List<UnitOfWork> fromString(@NotNull final String value) {
             try {
-                return Util.OBJECT_MAPPER.readValue(value, new TypeReference<>() {});
+                return Utils.OBJECT_MAPPER.readValue(value, new TypeReference<>() {});
             } catch (JsonProcessingException e) {
                 return new ArrayList<>();
             }
@@ -93,7 +95,7 @@ public class UnitOfWork {
         @Override
         public @Nullable String toString(@NotNull final List<UnitOfWork> value) {
             try {
-                return Util.OBJECT_MAPPER.writeValueAsString(value);
+                return Utils.OBJECT_MAPPER.writeValueAsString(value);
             } catch (JsonProcessingException e) {
                 throw new SerializationException(e);
             }

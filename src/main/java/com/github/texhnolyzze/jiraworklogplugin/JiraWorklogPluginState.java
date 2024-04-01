@@ -1,7 +1,8 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.HowToDetermineWhenUserStartedWorkingOnIssue;
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategyEnum;
+import com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue;
+import com.github.texhnolyzze.jiraworklogplugin.enums.WorklogGatherStrategyEnum;
+import com.github.texhnolyzze.jiraworklogplugin.timer.Timer;
 import com.intellij.openapi.components.PersistentStateComponent;
 import com.intellij.openapi.components.State;
 import com.intellij.openapi.project.Project;
@@ -28,6 +29,7 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
     private boolean showDialogOnExit = true;
     private boolean showDialogOnBranchChange = true;
     private boolean showDialogOnGitPush = true;
+    private boolean showIssuePrompt = true;
     private boolean closed;
     private WorklogGatherStrategyEnum worklogSummaryGatherStrategy = WorklogGatherStrategyEnum.TIMESHEET_GADGET;
     private HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue = HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT;
@@ -60,7 +62,7 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
         this.timers = timers == null ? new HashMap<>() : timers;
     }
 
-    Set<Timer> getActiveTimers() {
+    public Set<Timer> getActiveTimers() {
         return activeTimers;
     }
 
@@ -113,6 +115,14 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
 
     public void setShowDialogOnGitPush(final boolean showDialogOnGitPush) {
         this.showDialogOnGitPush = showDialogOnGitPush;
+    }
+
+    public boolean isShowIssuePrompt() {
+        return showIssuePrompt;
+    }
+
+    public void setShowIssuePrompt(final boolean showIssuePrompt) {
+        this.showIssuePrompt = showIssuePrompt;
     }
 
     public boolean isClosed() {
@@ -175,7 +185,7 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
         final List<UnitOfWork> branchUnitsOfWork = getTimeSeries().stream().filter(
             work -> Objects.equals(work.getBranch(), branch)
         ).collect(Collectors.toList());
-        final Timer timer = getTimer(branch, project);
+        final @NotNull Timer timer = getTimer(branch, project);
         final ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
         if (branchUnitsOfWork.isEmpty()) {
             final Duration timeSpent = timer.toDuration();

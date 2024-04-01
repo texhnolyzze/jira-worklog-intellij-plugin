@@ -1,11 +1,10 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
 
+import com.github.texhnolyzze.jiraworklogplugin.utils.JiraKeyUtils;
 import org.jetbrains.annotations.NotNull;
 
 import java.time.LocalDate;
-import java.util.Collection;
 import java.util.Objects;
-import java.util.Set;
 
 public class JiraIssue implements Comparable<JiraIssue> {
 
@@ -13,17 +12,23 @@ public class JiraIssue implements Comparable<JiraIssue> {
     private final String summary;
     private final String issueType;
     private final Integer timeEstimateSeconds;
+    private final String assignee;
+    private final Status status;
 
-    JiraIssue(
+    public JiraIssue(
         final String key,
         final String summary,
         final String issueType,
-        final Integer timeEstimateSeconds
+        final Integer timeEstimateSeconds,
+        final String assignee,
+        final Status status
     ) {
         this.key = key;
         this.summary = summary;
         this.issueType = issueType;
         this.timeEstimateSeconds = timeEstimateSeconds;
+        this.assignee = assignee;
+        this.status = status;
     }
 
     public String getKey() {
@@ -36,6 +41,14 @@ public class JiraIssue implements Comparable<JiraIssue> {
 
     public Integer getTimeEstimateSeconds() {
         return timeEstimateSeconds;
+    }
+
+    public String getAssignee() {
+        return assignee;
+    }
+
+    public Status getStatus() {
+        return status;
     }
 
     @Override
@@ -58,23 +71,41 @@ public class JiraIssue implements Comparable<JiraIssue> {
 
     @Override
     public int compareTo(@NotNull final JiraIssue other) {
-        final String myPrefix = Util.jiraKeyPrefix(key);
-        final String otherPrefix = Util.jiraKeyPrefix(other.key);
+        final String myPrefix = JiraKeyUtils.jiraKeyPrefix(key);
+        final String otherPrefix = JiraKeyUtils.jiraKeyPrefix(other.key);
         final int cmp = myPrefix.compareTo(otherPrefix);
         if (cmp == 0) {
-            final int myNumber = Integer.parseInt(Util.jiraKeyNumber(key));
-            final int otherNumber = Integer.parseInt(Util.jiraKeyNumber(other.key));
+            final int myNumber = Integer.parseInt(JiraKeyUtils.jiraKeyNumber(key));
+            final int otherNumber = Integer.parseInt(JiraKeyUtils.jiraKeyNumber(other.key));
             return Integer.compare(myNumber, otherNumber);
         }
         return cmp;
+    }
+
+    public static class Status {
+
+        private final String id;
+        private final String name;
+
+        public Status(final String id, final String name) {
+            this.id = id;
+            this.name = name;
+        }
+
+        public String getId() {
+            return id;
+        }
+
+        public String getName() {
+            return name;
+        }
+
     }
 
     public static class Criteria {
 
         private String key;
         private String summary;
-        private Collection<String> types;
-        private Set<String> parents;
         private LocalDate worklogDate;
         private String worklogAuthor;
 
@@ -92,22 +123,6 @@ public class JiraIssue implements Comparable<JiraIssue> {
 
         public void setSummary(final String summary) {
             this.summary = summary;
-        }
-
-        public Collection<String> getTypes() {
-            return types;
-        }
-
-        public void setTypes(final Collection<String> types) {
-            this.types = types;
-        }
-
-        public Set<String> getParents() {
-            return parents;
-        }
-
-        public void setParents(final Set<String> parents) {
-            this.parents = parents;
         }
 
         public LocalDate getWorklogDate() {
@@ -131,8 +146,6 @@ public class JiraIssue implements Comparable<JiraIssue> {
             return "Criteria{" +
                 "key='" + key + '\'' +
                 ", summary='" + summary + '\'' +
-                ", types=" + types +
-                ", parents=" + parents +
                 ", worklogDate=" + worklogDate +
                 ", worklogAuthor='" + worklogAuthor + '\'' +
                 '}';

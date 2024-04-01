@@ -1,7 +1,17 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import com.github.texhnolyzze.jiraworklogplugin.enums.AdjustEstimate;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.AddWorklogResponse;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.FindJiraIssuesResponse;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.JiraIssue;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.TodayWorklogSummaryResponse;
+import com.github.texhnolyzze.jiraworklogplugin.timer.Timer;
+import com.github.texhnolyzze.jiraworklogplugin.timer.TimerActionUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.JiraDurationUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.JiraKeyUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.Utils;
+import com.google.common.html.HtmlEscapers;
 import com.intellij.credentialStore.CredentialAttributes;
-import com.intellij.credentialStore.CredentialAttributesKt;
 import com.intellij.credentialStore.Credentials;
 import com.intellij.ide.passwordSafe.PasswordSafe;
 import com.intellij.openapi.project.Project;
@@ -23,8 +33,8 @@ import java.util.List;
 import java.util.NavigableSet;
 import java.util.stream.Collectors;
 
+import static com.github.texhnolyzze.jiraworklogplugin.utils.PluginCredentialsUtils.getCredentialAttributes;
 import static java.util.function.Predicate.not;
-import static org.apache.commons.lang.StringEscapeUtils.escapeHtml;
 
 public class JiraWorklogDialog extends JDialog {
 
@@ -38,7 +48,7 @@ public class JiraWorklogDialog extends JDialog {
     private JTextField comment;
     private JTextField timeSpent;
     private JTextField remained;
-    private JTextField username;
+    private JTextField email;
     private JPasswordField password;
     private JButton testConnectionButton;
     private JLabel testConnectionResult;
@@ -71,7 +81,7 @@ public class JiraWorklogDialog extends JDialog {
         synchronized (state) {
             timer = state.getTimer(branchName, project);
         }
-        final String formatted = Util.formatAsJiraDuration(timer.toDuration());
+        final String formatted = JiraDurationUtils.formatAsJiraDuration(timer.toDuration());
         this.timeSpent.setText(formatted);
         this.timeSpentSinceLastWorklogAdded.setText(
             "You spent " + formatted + " in " + branchName + " since you last logged from it "
@@ -83,7 +93,7 @@ public class JiraWorklogDialog extends JDialog {
         adjustEstimate.setSelectedItem(AdjustEstimate.AUTO);
     }
 
-    void init(final String jiraKey) {
+    public void init(final String jiraKey) {
         final boolean connectionSettingsOk = setupJiraConnectionSettings();
         final boolean connectionOk;
         if (connectionSettingsOk) {
@@ -91,7 +101,7 @@ public class JiraWorklogDialog extends JDialog {
         } else {
             connectionOk = false;
         }
-        final boolean isJiraKey = Util.isJiraKey(jiraKey);
+        final boolean isJiraKey = JiraKeyUtils.isJiraKey(jiraKey);
         if (connectionOk) {
             if (isJiraKey) {
                 findIssues(jiraKey);
@@ -110,7 +120,7 @@ public class JiraWorklogDialog extends JDialog {
         jiraIssue.removeAllItems();
         final JiraClient client = JiraClient.getInstance(project);
         final JiraIssue.Criteria criteria = new JiraIssue.Criteria();
-        final boolean isJiraKey = Util.isJiraKey(input);
+        final boolean isJiraKey = JiraKeyUtils.isJiraKey(input);
         if (isJiraKey) {
             criteria.setKey(input);
         } else {
@@ -118,10 +128,10 @@ public class JiraWorklogDialog extends JDialog {
         }
         final char[] pass = password.getPassword();
         final FindJiraIssuesResponse response = client.findIssues(
-            jiraUrl.getText(),
-            username.getText(),
-            new String(pass),
-            criteria
+                jiraUrl.getText(),
+                email.getText(),
+                new String(pass),
+                criteria
         );
         Arrays.fill(pass, '\0');
         if (response != null && StringUtils.isBlank(response.getError())) {
@@ -161,13 +171,14 @@ public class JiraWorklogDialog extends JDialog {
     }
 
     private boolean setupJiraConnectionSettings() {
-        final String url = JiraWorklogPluginState.getInstance(project).getJiraUrl();
+        final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
+        final String url = state.getJiraUrl();
         if (!StringUtils.isBlank(url)) {
             jiraUrl.setText(url);
             final CredentialAttributes attributes = getCredentialAttributes(url);
             final Credentials credentials = PasswordSafe.getInstance().get(attributes);
             if (credentials != null) {
-                username.setText(credentials.getUserName());
+                email.setText(credentials.getUserName());
                 password.setText(credentials.getPasswordAsString());
                 return true;
             }
@@ -194,7 +205,7 @@ public class JiraWorklogDialog extends JDialog {
         );
         testConnectionButton.addActionListener(unused -> testConnection());
         final TextFieldListener textFieldListener = new TextFieldListener();
-        username.getDocument().addDocumentListener(textFieldListener);
+        email.getDocument().addDocumentListener(textFieldListener);
         password.getDocument().addDocumentListener(textFieldListener);
         jiraUrl.getDocument().addDocumentListener(textFieldListener);
         timeSpent.getDocument().addDocumentListener(textFieldListener);
@@ -256,18 +267,18 @@ public class JiraWorklogDialog extends JDialog {
             final JiraIssue issue = (JiraIssue) jiraIssueSelectedItem;
             if (issue.getTimeEstimateSeconds() != null) {
                 final Duration currentEstimate = Duration.ofSeconds(issue.getTimeEstimateSeconds());
-                timeEstimate.setText(Util.formatAsJiraDuration(currentEstimate));
+                timeEstimate.setText(JiraDurationUtils.formatAsJiraDuration(currentEstimate));
                 final Object adjustEstimateSelectedItem = adjustEstimate.getSelectedItem();
                 if (adjustEstimateSelectedItem instanceof AdjustEstimate) {
                     final AdjustEstimate adjEstimate = (AdjustEstimate) adjustEstimateSelectedItem;
                     final Duration adjusted = adjEstimate.adjust(
                         currentEstimate,
-                        Util.parseJiraDuration(adjustmentDuration.getText()),
-                        Util.parseJiraDuration(timeSpent.getText())
+                        JiraDurationUtils.parseJiraDuration(adjustmentDuration.getText()),
+                        JiraDurationUtils.parseJiraDuration(timeSpent.getText())
                     );
                     if (adjusted != null) {
                         timeEstimate.setText(
-                            timeEstimate.getText() + " (" + Util.formatAsJiraDuration(adjusted) + " after adjustment)"
+                            timeEstimate.getText() + " (" + JiraDurationUtils.formatAsJiraDuration(adjusted) + " after adjustment)"
                         );
                     }
                 }
@@ -283,14 +294,14 @@ public class JiraWorklogDialog extends JDialog {
         final JiraClient client = JiraClient.getInstance(project);
         final char[] pass = password.getPassword();
         final String url = jiraUrl.getText();
-        final String name = username.getText();
         final JiraWorklogPluginState state = JiraWorklogPluginState.getInstance(project);
+        final String emailText = this.email.getText();
         final TodayWorklogSummaryResponse summary = client.getTodayWorklogSummary(
-            url,
-            name,
-            new String(pass),
-            state.getWorklogSummaryGatherStrategy(),
-            state.getHowToDetermineWhenUserStartedWorkingOnIssue()
+                url,
+                emailText,
+                new String(pass),
+                state.getWorklogSummaryGatherStrategy(),
+                state.getHowToDetermineWhenUserStartedWorkingOnIssue()
         );
         final boolean connectionOk;
         if (summary != null && StringUtils.isBlank(summary.getError())) {
@@ -306,7 +317,7 @@ public class JiraWorklogDialog extends JDialog {
                 state.setJiraUrl(url);
             }
             final CredentialAttributes credentialAttributes = getCredentialAttributes(url);
-            final Credentials credentials = new Credentials(username.getText(), new String(pass));
+            final Credentials credentials = new Credentials(emailText, new String(pass));
             PasswordSafe.getInstance().set(credentialAttributes, credentials);
             connectionOk = true;
         } else {
@@ -318,7 +329,9 @@ public class JiraWorklogDialog extends JDialog {
                         ""
                     ) + "<br>" +
                     "Try to change worklog gather strategy<br>" +
-                    "Tools -> Jira Worklog Plugin -> Worklog Gather Strategy" +
+                    "Tools -> Jira Worklog Plugin -> Worklog Gather Strategy<br>" +
+                    "Make sure your credentials are correct<br>" +
+                    "New versions of JIRA use API token" +
                 "</html>"
             );
             testConnectionResult.setForeground(JBColor.RED);
@@ -339,12 +352,12 @@ public class JiraWorklogDialog extends JDialog {
         }
         final Duration timerDuration = timer.toDuration();
         final Duration adjusted = timerDuration.minus(timeSpentViaExternalWorklogs);
-        timeSpent.setText(Util.formatAsJiraDuration(adjusted));
+        timeSpent.setText(JiraDurationUtils.formatAsJiraDuration(adjusted));
         timeSpentSinceLastWorklogAdded.setText(
             "<html>" +
-                "You spent " + Util.formatAsJiraDuration(timerDuration) + " in " + branchName + " since you last logged from it.<br>" +
+                "You spent " + JiraDurationUtils.formatAsJiraDuration(timerDuration) + " in " + branchName + " since you last logged from it.<br>" +
                 "Plugin also detected today worklogs that intersect with current branch timer, " +
-                "not created by it with total time " + Util.formatAsJiraDuration(timeSpentViaExternalWorklogs) + ".<br>" +
+                "not created by it with total time " + JiraDurationUtils.formatAsJiraDuration(timeSpentViaExternalWorklogs) + ".<br>" +
                 "This time was automatically subtracted from Time Spent" +
             "</html>"
         );
@@ -373,18 +386,11 @@ public class JiraWorklogDialog extends JDialog {
         return externalWorklogsTotal;
     }
 
-    @NotNull
-    private static CredentialAttributes getCredentialAttributes(final String url) {
-        return new CredentialAttributes(
-            CredentialAttributesKt.generateServiceName("JiraWorklogPlugin", url)
-        );
-    }
-
     private void onOK() {
         final JDialog dialog = new JDialog();
         try {
             final Object selectedItem = jiraIssue.getSelectedItem();
-            final Duration duration = Util.parseJiraDuration(timeSpent.getText());
+            final Duration duration = JiraDurationUtils.parseJiraDuration(timeSpent.getText());
             if (
                 selectedItem instanceof JiraIssue &&
                 duration != null &&
@@ -395,17 +401,17 @@ public class JiraWorklogDialog extends JDialog {
                 dialog.setLocationRelativeTo(this);
                 final int selected = JOptionPane.showConfirmDialog(
                     dialog,
-                    "Log " + Util.formatAsJiraDuration(duration) + " to " + ((JiraIssue) selectedItem).getKey() + "?",
+                    "Log " + JiraDurationUtils.formatAsJiraDuration(duration) + " to " + ((JiraIssue) selectedItem).getKey() + "?",
                     "Confirm",
                     JOptionPane.OK_CANCEL_OPTION
                 );
                 if (selected == JOptionPane.OK_OPTION) {
                     final char[] pass = password.getPassword();
                     final Object adjustEstimateSelectedItem = adjustEstimate.getSelectedItem();
-                    final Duration adjDuration = Util.parseJiraDuration(adjustmentDuration.getText());
+                    final Duration adjDuration = JiraDurationUtils.parseJiraDuration(adjustmentDuration.getText());
                     final AddWorklogResponse response = JiraClient.getInstance(project).addWorklog(
                         jiraUrl.getText(),
-                        username.getText(),
+                        email.getText(),
                         new String(pass),
                         ((JiraIssue) selectedItem),
                         duration,
@@ -448,28 +454,28 @@ public class JiraWorklogDialog extends JDialog {
 
     private void checkEnablingConditions() {
         final String url = JiraWorklogDialog.this.jiraUrl.getText();
-        final String name = JiraWorklogDialog.this.username.getText();
+        final String emailText = JiraWorklogDialog.this.email.getText();
         final char[] pass = JiraWorklogDialog.this.password.getPassword();
         final boolean jiraConnectionSettingsOk;
         final boolean jiraWorklogParamsOk;
         jiraConnectionSettingsOk = (
-            !StringUtils.isBlank(url) &&
-            Util.isValidUrl(url) &&
-            url.startsWith("https://") &&
-            !StringUtils.isBlank(name) &&
-            pass != null &&
-            pass.length >= 8
+                !StringUtils.isBlank(url) &&
+                        Utils.isValidUrl(url) &&
+                        url.startsWith("https://") &&
+                        !StringUtils.isBlank(emailText) &&
+                        pass != null &&
+                        pass.length >= 8
         );
         final Object jiraIssueSelectedItem = jiraIssue.getSelectedItem();
         final Object adjustEstimateSelectedItem = adjustEstimate.getSelectedItem();
         jiraWorklogParamsOk = (
             jiraIssueSelectedItem instanceof JiraIssue &&
-            Util.isJiraDuration(timeSpent.getText()) &&
-            !Util.parseJiraDuration(timeSpent.getText()).isZero() &&
+            JiraDurationUtils.isJiraDuration(timeSpent.getText()) &&
+            !JiraDurationUtils.parseJiraDuration(timeSpent.getText()).isZero() &&
             adjustEstimateSelectedItem instanceof AdjustEstimate &&
             (
                 ((AdjustEstimate) adjustEstimateSelectedItem).getAdjustmentDurationLabel() == null ||
-                Util.isJiraDuration(adjustmentDuration.getText())
+                JiraDurationUtils.isJiraDuration(adjustmentDuration.getText())
             )
         );
         testConnectionButton.setEnabled(jiraConnectionSettingsOk);
@@ -499,7 +505,7 @@ public class JiraWorklogDialog extends JDialog {
             if (currentWidth + wordWidth + (lastWord ? 0 : spaceWidth) > maxJiraIssueWidth) {
                 currentWidth = wordWidth;
                 builder.append("<br>");
-                builder.append(escapeHtml(word));
+                builder.append(HtmlEscapers.htmlEscaper().escape(word));
             } else {
                 builder.append(word);
                 currentWidth += wordWidth;

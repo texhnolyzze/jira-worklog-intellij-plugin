@@ -1,4 +1,4 @@
-package com.github.texhnolyzze.jiraworklogplugin.workloggather;
+package com.github.texhnolyzze.jiraworklogplugin.enums;
 
 import java.time.Duration;
 import java.time.ZonedDateTime;

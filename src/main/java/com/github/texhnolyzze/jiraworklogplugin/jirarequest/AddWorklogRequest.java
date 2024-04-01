@@ -1,8 +1,8 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.jirarequest;
 
 import org.jetbrains.annotations.NotNull;
 
-class AddWorklogRequest {
+public class AddWorklogRequest {
 
     static final String PLUGIN_MARK = "Created by Jira Worklog Plugin: %s\n";
 
@@ -10,7 +10,7 @@ class AddWorklogRequest {
     private final String comment;
     private final String started;
 
-    AddWorklogRequest(
+    public AddWorklogRequest(
         final @NotNull String projectName,
         final Long timeSpentSeconds,
         final String comment,
@@ -43,7 +43,7 @@ class AddWorklogRequest {
             '}';
     }
 
-    static String getPluginMark(final @NotNull String projectName) {
+    public static String getPluginMark(final @NotNull String projectName) {
         return String.format(PLUGIN_MARK, projectName);
     }
 

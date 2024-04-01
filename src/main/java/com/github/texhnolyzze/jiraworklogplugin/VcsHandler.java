@@ -1,5 +1,9 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
+import com.github.texhnolyzze.jiraworklogplugin.timer.Timer;
+import com.github.texhnolyzze.jiraworklogplugin.utils.GitUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.JiraKeyUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.WorklogDialogUtils;
 import com.intellij.dvcs.push.*;
 import com.intellij.notification.Notification;
 import com.intellij.notification.Notifications;
@@ -18,7 +22,7 @@ import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import static com.github.texhnolyzze.jiraworklogplugin.Util.stripRemoteName;
+import static com.github.texhnolyzze.jiraworklogplugin.utils.GitUtils.stripRemoteName;
 import static com.intellij.openapi.util.text.StringUtil.stripHtml;
 import static com.intellij.openapi.util.text.StringUtil.stripQuotesAroundValue;
 import static git4idea.branch.GitBranchUtil.stripRefsPrefix;
@@ -107,7 +111,7 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
                     }
                 }
                 logger.info(String.format("notify: Commit message (possibly replaced by branch name contained in it): %s", message));
-                Util.showWorklogDialog(project, Objects.requireNonNullElse(message, strippedBranch));
+                WorklogDialogUtils.showWorklogDialog(project, Objects.requireNonNullElse(message, strippedBranch));
                 break;
             }
         }
@@ -119,7 +123,7 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
         final String targetBranch = strip(renameMatcher.group("targetBranch"), project);
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized (state) {
-            final String currentBranch = Util.getCurrentBranch(project);
+            final String currentBranch = GitUtils.getCurrentBranch(project);
             state.setLastBranch(currentBranch);
             final Timer srcTimer = state.getTimer(srcBranch, project);
             final Timer targetTimer = state.getTimer(targetBranch, project);
@@ -220,7 +224,7 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
                             break;
                         }
                     } else {
-                        final String jiraKey = Util.findJiraKey(message);
+                        final String jiraKey = JiraKeyUtils.findJiraKey(message);
                         if (jiraKey != null) {
                             commitMessage = message;
                             logger.info(String.format("handle: Commit message: %s", commitMessage));
@@ -257,13 +261,13 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
         }
         if (lastBranch != null) {
             if (showDialogOnBranchChange) {
-                Util.showWorklogDialog(project, lastBranch, lastBranch);
+                WorklogDialogUtils.showWorklogDialog(project, lastBranch, lastBranch);
             }
             final Timer lastBranchTimer = state.getTimer(lastBranch, project);
             lastBranchTimer.pause(project);
             state.appendUnitOfWork(state.actualUnitOfWorkForBranch(lastBranch, project));
         }
-        final String currentBranch = Util.getCurrentBranch(project);
+        final String currentBranch = GitUtils.getCurrentBranch(project);
         if (currentBranch != null) {
             synchronized (state) {
                 final Timer currentBranchTimer = state.getTimer(currentBranch, project);

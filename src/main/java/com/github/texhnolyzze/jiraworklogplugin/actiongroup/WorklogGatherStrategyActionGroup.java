@@ -1,4 +1,4 @@
-package com.github.texhnolyzze.jiraworklogplugin.workloggather;
+package com.github.texhnolyzze.jiraworklogplugin.actiongroup;
 
 import com.intellij.openapi.actionSystem.DefaultActionGroup;
 

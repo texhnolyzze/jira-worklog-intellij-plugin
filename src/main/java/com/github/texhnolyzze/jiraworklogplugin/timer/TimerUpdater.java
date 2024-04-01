@@ -1,5 +1,6 @@
-package com.github.texhnolyzze.jiraworklogplugin;
+package com.github.texhnolyzze.jiraworklogplugin.timer;
 
+import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogPluginState;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
 import com.intellij.serviceContainer.AlreadyDisposedException;
@@ -21,11 +22,11 @@ public class TimerUpdater {
     private int numUpdates;
     private ScheduledFuture<?> schedule;
 
-    static TimerUpdater getInstance(final Project project) {
+    public static TimerUpdater getInstance(final Project project) {
         return project.getService(TimerUpdater.class);
     }
 
-    void setup(final Project project) {
+    public void setup(final Project project) {
         final long updateInterval = Duration.ofSeconds(10).toNanos();
         this.schedule = AppExecutorUtil.getAppScheduledExecutorService().scheduleWithFixedDelay(
             () -> {
@@ -92,7 +93,7 @@ public class TimerUpdater {
         logger.info("TimerUpdater setup");
     }
 
-    void cancel() {
+    public void cancel() {
         if (this.schedule != null) {
             this.schedule.cancel(true);
         }
