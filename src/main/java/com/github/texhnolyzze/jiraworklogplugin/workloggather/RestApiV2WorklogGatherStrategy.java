@@ -7,7 +7,6 @@ import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.FindJiraIssuesRespo
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.FindJiraWorklogsResponse;
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.JiraIssue;
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.TodayWorklogSummaryResponse;
-import com.github.texhnolyzze.jiraworklogplugin.utils.EmailUtils;
 import com.intellij.openapi.diagnostic.Logger;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 
@@ -17,6 +16,7 @@ import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.ListIterator;
+import java.util.Objects;
 
 public class RestApiV2WorklogGatherStrategy extends WorklogGatherStrategy {
 
@@ -60,12 +60,10 @@ public class RestApiV2WorklogGatherStrategy extends WorklogGatherStrategy {
                 while (iterator.hasPrevious()) {
                     final JiraWorklog worklog = iterator.previous();
                     final String worklogEmail = worklog.getAuthorEmailAddress();
-                    if (EmailUtils.sameUser(email, worklogEmail)) {
+                    if (Objects.equals(worklogEmail, email)) {
                         final ZonedDateTime worklogStart = how.determine(worklog.getStartTime(), worklog.getTimeSpent());
                         if (dayStart.compareTo(worklogStart) <= 0 && worklogStart.compareTo(dayEnd) <= 0) {
                             worklogs.add(worklog);
-                        } else {
-                            break; // we can safely skip remaining worklogs since they are sorted by 'Started'
                         }
                     }
                 }

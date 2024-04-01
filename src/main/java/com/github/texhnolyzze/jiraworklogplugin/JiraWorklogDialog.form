@@ -95,7 +95,7 @@
             </constraints>
             <properties>
               <labelFor value="18408"/>
-              <text value="&lt;html&gt;Email (recommended)&lt;br&gt;You can also use username:&lt;html&gt;"/>
+              <text value="Email:"/>
             </properties>
           </component>
           <component id="18408" class="javax.swing.JTextField" binding="email">

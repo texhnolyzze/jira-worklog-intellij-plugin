@@ -2,10 +2,12 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.texhnolyzze.jiraworklogplugin.enums.AdjustEstimate;
+import com.github.texhnolyzze.jiraworklogplugin.enums.AuthorizeWith;
 import com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue;
 import com.github.texhnolyzze.jiraworklogplugin.enums.WorklogGatherStrategyEnum;
 import com.github.texhnolyzze.jiraworklogplugin.jirarequest.AddWorklogRequest;
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.*;
+import com.github.texhnolyzze.jiraworklogplugin.utils.EmailUtils;
 import com.google.common.net.HttpHeaders;
 import com.intellij.openapi.diagnostic.Logger;
 import com.intellij.openapi.project.Project;
@@ -50,6 +52,8 @@ public class JiraClient {
 
     private final HttpClient httpClient;
     private final Project project;
+
+    private final Map<String, AuthorizeWith> authorizeWithMap = new HashMap<>();
 
     JiraClient(final Project project) {
         this.project = project;
@@ -169,7 +173,55 @@ public class JiraClient {
             final WorklogGatherStrategyEnum gatherType,
             final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
+        if (authorizeWithMap.get(email) == null) {
+            probeAuth(jiraUrl, email, password);
+        }
         return gatherType.create(this).get(jiraUrl, email, password, how);
+    }
+
+    private void probeAuth(final String jiraUrl, final String email, final String password) {
+        if (!email.contains("@")) {
+            authorizeWithMap.put(email, AuthorizeWith.USERNAME);
+        }
+        final URI uri = URI.create(
+                jiraUrl + (jiraUrl.endsWith("/") ? "" : "/") + "rest/api/2/search?maxResults=0&fields=key"
+        );
+        final String emailAuth = "Basic " + Base64.getEncoder().encodeToString(
+                (email + ":" + password).getBytes(StandardCharsets.UTF_8)
+        );
+        if (authProbeSuccess(uri, emailAuth)) {
+            authorizeWithMap.put(email, AuthorizeWith.EMAIL);
+        } else {
+            final String usernameAuth = "Basic " + Base64.getEncoder().encodeToString(
+                    (EmailUtils.getUsername(email) + ":" + password).getBytes(StandardCharsets.UTF_8)
+            );
+            if (authProbeSuccess(uri, usernameAuth)) {
+                authorizeWithMap.put(email, AuthorizeWith.USERNAME);
+            } else {
+                logger.warn("Can't authorize user with neither email nor username");
+                authorizeWithMap.put(email, AuthorizeWith.EMAIL);
+            }
+        }
+    }
+
+    private boolean authProbeSuccess(final URI uri, final String authorization) {
+        final HttpRequest build = HttpRequest
+                .newBuilder()
+                .uri(uri)
+                .header(HttpHeaders.AUTHORIZATION, authorization)
+                .build();
+        try {
+            final HttpResponse<Void> response = httpClient.send(build, HttpResponse.BodyHandlers.discarding());
+            if (response.statusCode() >= 200 && response.statusCode() < 300) {
+                return true;
+            }
+        } catch (IOException | InterruptedException e) {
+            logger.error("Error searching Jira issues", e);
+            if (e instanceof InterruptedException) {
+                Thread.currentThread().interrupt();
+            }
+        }
+        return false;
     }
 
     public FindJiraWorklogsResponse findWorklogs(
@@ -214,8 +266,15 @@ public class JiraClient {
 
     @NotNull
     public String getAuthorization(final String email, final String password) {
+        final AuthorizeWith authorizeWith = authorizeWithMap.getOrDefault(email, AuthorizeWith.EMAIL);
+        final String auth;
+        if (authorizeWith == AuthorizeWith.EMAIL) {
+            auth = email;
+        } else {
+            auth = EmailUtils.getUsername(email);
+        }
         return "Basic " + Base64.getEncoder().encodeToString(
-            (email + ":" + password).getBytes(StandardCharsets.UTF_8)
+            (auth + ":" + password).getBytes(StandardCharsets.UTF_8)
         );
     }
 
@@ -378,6 +437,10 @@ public class JiraClient {
             );
         }
         return result;
+    }
+
+    public AuthorizeWith getAuthorizeWith(final String email) {
+        return authorizeWithMap.getOrDefault(email, AuthorizeWith.EMAIL);
     }
 
 }

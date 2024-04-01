@@ -29,7 +29,6 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
     private boolean showDialogOnExit = true;
     private boolean showDialogOnBranchChange = true;
     private boolean showDialogOnGitPush = true;
-    private boolean showIssuePrompt = true;
     private boolean closed;
     private WorklogGatherStrategyEnum worklogSummaryGatherStrategy = WorklogGatherStrategyEnum.TIMESHEET_GADGET;
     private HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue = HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT;
@@ -115,14 +114,6 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
 
     public void setShowDialogOnGitPush(final boolean showDialogOnGitPush) {
         this.showDialogOnGitPush = showDialogOnGitPush;
-    }
-
-    public boolean isShowIssuePrompt() {
-        return showIssuePrompt;
-    }
-
-    public void setShowIssuePrompt(final boolean showIssuePrompt) {
-        this.showIssuePrompt = showIssuePrompt;
     }
 
     public boolean isClosed() {

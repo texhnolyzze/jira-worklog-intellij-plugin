@@ -1,12 +1,14 @@
 package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.github.texhnolyzze.jiraworklogplugin.enums.AdjustEstimate;
+import com.github.texhnolyzze.jiraworklogplugin.enums.AuthorizeWith;
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.AddWorklogResponse;
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.FindJiraIssuesResponse;
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.JiraIssue;
 import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.TodayWorklogSummaryResponse;
 import com.github.texhnolyzze.jiraworklogplugin.timer.Timer;
 import com.github.texhnolyzze.jiraworklogplugin.timer.TimerActionUtils;
+import com.github.texhnolyzze.jiraworklogplugin.utils.EmailUtils;
 import com.github.texhnolyzze.jiraworklogplugin.utils.JiraDurationUtils;
 import com.github.texhnolyzze.jiraworklogplugin.utils.JiraKeyUtils;
 import com.github.texhnolyzze.jiraworklogplugin.utils.Utils;
@@ -305,8 +307,19 @@ public class JiraWorklogDialog extends JDialog {
         );
         final boolean connectionOk;
         if (summary != null && StringUtils.isBlank(summary.getError())) {
-            testConnectionResult.setText("Connection ok");
-            testConnectionResult.setForeground(JBColor.GREEN);
+            final AuthorizeWith authorizeWith = client.getAuthorizeWith(emailText);
+            testConnectionResult.setText(
+                    "<html>" +
+                            "Connection ok" +
+                            (
+                                    authorizeWith == AuthorizeWith.USERNAME ?
+                                    "<br>You are authorized with username (without @ and domains)" +
+                                            "<br>Nothing wrong, just make sure you typed email correctly" :
+                                    ""
+                            ) +
+                    "</html>"
+            );
+            testConnectionResult.setForeground(authorizeWith == AuthorizeWith.EMAIL ? JBColor.GREEN : JBColor.YELLOW);
             logged.setText(String.valueOf(summary.getSpentPretty()));
             remained.setText(String.valueOf(summary.getRemainedToLogPretty()));
             final Duration timeSpentViaExternalWorklogs = findTimeSpentViaExternalWorklogs(summary);
@@ -463,6 +476,7 @@ public class JiraWorklogDialog extends JDialog {
                         Utils.isValidUrl(url) &&
                         url.startsWith("https://") &&
                         !StringUtils.isBlank(emailText) &&
+                        EmailUtils.isEmail(emailText) &&
                         pass != null &&
                         pass.length >= 8
         );
