@@ -30,7 +30,7 @@ public class JiraWorklogPluginState implements PersistentStateComponent<JiraWork
     private boolean showDialogOnBranchChange = true;
     private boolean showDialogOnGitPush = true;
     private boolean closed;
-    private WorklogGatherStrategyEnum worklogSummaryGatherStrategy = WorklogGatherStrategyEnum.TIMESHEET_GADGET;
+    private WorklogGatherStrategyEnum worklogSummaryGatherStrategy = WorklogGatherStrategyEnum.REST_API_V2;
     private HowToDetermineWhenUserStartedWorkingOnIssue howToDetermineWhenUserStartedWorkingOnIssue = HowToDetermineWhenUserStartedWorkingOnIssue.SUBTRACT_TIME_SPENT;
     @OptionTag(converter = UnitOfWork.UnitOfWorkListConverter.class)
     private List<UnitOfWork> timeSeries;
