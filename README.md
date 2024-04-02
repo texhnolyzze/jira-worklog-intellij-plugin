@@ -158,3 +158,5 @@ If it exceeds, such an update is skipped.
 * The plugin marks each worklog it creates by adding a `Created by Jira Worklog Plugin: ${projectName}` to the beginning of the comment 
 
 * RestApiV2 worklog gather strategy will not work if you work logged to Jira Issue that contains >1000 worklogs. It's Jira's bug https://jira.atlassian.com/browse/JRACLOUD-73630. Although in the link it is about `startedAfter` parameter not working, any parameter described in API's documentation https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-worklogs/ doesn't work.
+
+* You may see such message: ![img.png](img.png) It means, that for some reason your Jira did not accept email, but accept username (part before `@`). This was the case with my Jira. You can still use this plugin, just make sure that email is correct, because it's used in some other parts of the plugin, not just authorization.
