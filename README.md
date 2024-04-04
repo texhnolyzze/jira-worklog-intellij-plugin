@@ -85,12 +85,6 @@ if your Jira does not contain issues that have a lot of worklogs.
 The second option requires the Timesheet Reports & Gadgets plugin in Jira,
 but is significantly faster.
 
-The third option requires the Tempo Timesheets plugin. This functionality is not tested though, 
-because I have no access to Jira with Tempo plugin installed. If you find any problems, please create an issue.
-Especially I'm unsure about time zones returned from rest API of Tempo. 
-Are they all UTC or user-specific/server-specific? For now, it works in assumption that they all are UTC.
-
-
 * There is also a setting with a very long name (I really have no idea how to name it):
 
 ![how](docs-resources/how-to-determine-when-user-started-working.png)
@@ -157,6 +151,6 @@ If it exceeds, such an update is skipped.
 
 * The plugin marks each worklog it creates by adding a `Created by Jira Worklog Plugin: ${projectName}` to the beginning of the comment 
 
-* RestApiV2 worklog gather strategy will not work if you work logged to Jira Issue that contains >1000 worklogs. It's Jira's bug https://jira.atlassian.com/browse/JRACLOUD-73630. Although in the link it is about `startedAfter` parameter not working, any parameter described in API's documentation https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-worklogs/ doesn't work.
+* RestApiV2 worklog gather strategy may not work if you logged to Jira Issue that contains >1000 worklogs. It's Jira's bug https://jira.atlassian.com/browse/JRACLOUD-73630. Although in the link it is about `startedAfter` parameter not working, any parameter described in API's documentation https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-worklogs/ doesn't work.
 
 * You may see such message: ![img.png](img.png) It means, that for some reason your Jira did not accept email, but accept username (part before `@`). This was the case with my Jira. You can still use this plugin, just make sure that email is correct, because it's used in some other parts of the plugin, not just authorization.
