@@ -13,7 +13,7 @@ the plugin creates a timer for this branch (or uses an existing one).
 Now when you push to a remote repository, change a branch, or close a project, 
 you will be prompted with the following form:
 
-![example](docs-resources/example.png)
+![img_1.png](docs-resources/example.png)
 
 Enter the required data, click OK, a confirmation dialog will appear, after confirmation, 
 the worklog will be sent to Jira and the timer will be reset.
@@ -71,19 +71,20 @@ Example:
 ![settings](docs-resources/settings.png)
 
 
-* Worklog Gather Strategy has three options:
+* Worklog Gather Strategy has two options (and may be extended in the future):
 
-![gather-strategy](docs-resources/gather-strategy.png)
+![img_3.png](docs-resources/gather-strategy.png)
 
 It defines how the plugin should get a summary of today's
 workday to display total time logged in Jira.
 
 The first option is RestApiV2 (slow).
 It uses a Jira Rest Api and may be suitable for you
-if your Jira does not contain issues that have a lot of worklogs.
+if your Jira does not contain issues that have a lot of worklogs, since there is a bug in Jira related to tasks 
+with many worklogs. Although I can't reproduce it in Jira Cloud, so this strategy may work on recent Jira versions.
 
 The second option requires the Timesheet Reports & Gadgets plugin in Jira,
-but is significantly faster.
+but is significantly faster (I personally use it).
 
 * There is also a setting with a very long name (I really have no idea how to name it):
 
@@ -153,4 +154,11 @@ If it exceeds, such an update is skipped.
 
 * RestApiV2 worklog gather strategy may not work if you logged to Jira Issue that contains >1000 worklogs. It's Jira's bug https://jira.atlassian.com/browse/JRACLOUD-73630. Although in the link it is about `startedAfter` parameter not working, any parameter described in API's documentation https://developer.atlassian.com/cloud/jira/platform/rest/v2/api-group-issue-worklogs/ doesn't work.
 
-* You may see such message: ![img.png](img.png) It means, that for some reason your Jira did not accept email, but accept username (part before `@`). This was the case with my Jira. You can still use this plugin, just make sure that email is correct, because it's used in some other parts of the plugin, not just authorization.
+* You may see such message. It means, that for some reason your Jira did not accept email, but accept username 
+(part before `@`). This was the case with my Jira. You can still use this plugin, just make sure that email is correct, 
+because it's used in some other parts of the plugin, not just authorization.  
+![img.png](docs-resources/authorized-with-username.png)
+
+* Also you can see such message (this usually shows up at startup of IDEA). 
+Just try again a few seconds later and everything should work.  
+![img.png](docs-resources/cant-determine-current-git-branch.png)
