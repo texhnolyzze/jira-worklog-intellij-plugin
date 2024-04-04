@@ -2,7 +2,6 @@ package com.github.texhnolyzze.jiraworklogplugin.enums;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraClient;
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.RestApiV2WorklogGatherStrategy;
-import com.github.texhnolyzze.jiraworklogplugin.workloggather.TempoTimesheetsWorklogGatherStrategy;
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.TimesheetGadgetWorklogGatherStrategy;
 import com.github.texhnolyzze.jiraworklogplugin.workloggather.WorklogGatherStrategy;
 
@@ -18,12 +17,6 @@ public enum WorklogGatherStrategyEnum {
         @Override
         public WorklogGatherStrategy create(final JiraClient client) {
             return new TimesheetGadgetWorklogGatherStrategy(client);
-        }
-    },
-    TEMPO_TIMESHEETS {
-        @Override
-        public WorklogGatherStrategy create(final JiraClient client) {
-            return new TempoTimesheetsWorklogGatherStrategy(client);
         }
     };
 
