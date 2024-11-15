@@ -1,30 +1,25 @@
 package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
 
-public class AddWorklogResponse {
+import org.jetbrains.annotations.NotNull;
+import org.jetbrains.annotations.Nullable;
 
-    private final String error;
+public class AddWorklogResponse extends JiraResponse {
 
-    AddWorklogResponse(final String error) {
-        this.error = error;
-    }
-
-    public String getError() {
-        return error;
+    private AddWorklogResponse(final @Nullable String error) {
+        super(error);
     }
 
     public static AddWorklogResponse success() {
         return new AddWorklogResponse(null);
     }
 
-    public static AddWorklogResponse error(final String error) {
+    public static AddWorklogResponse error(@NotNull final String error) {
         return new AddWorklogResponse(error);
     }
 
     @Override
     public String toString() {
-        return "AddWorklogResponse{" +
-            "error='" + error + '\'' +
-            '}';
+        return "AddWorklogResponse{} " + super.toString();
     }
 
 }

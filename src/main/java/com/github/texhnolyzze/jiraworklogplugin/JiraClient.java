@@ -2,11 +2,17 @@ package com.github.texhnolyzze.jiraworklogplugin;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.github.texhnolyzze.jiraworklogplugin.enums.AdjustEstimate;
+import com.github.texhnolyzze.jiraworklogplugin.enums.AuthorizationResult;
 import com.github.texhnolyzze.jiraworklogplugin.enums.AuthorizeWith;
 import com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue;
 import com.github.texhnolyzze.jiraworklogplugin.enums.WorklogGatherStrategyEnum;
 import com.github.texhnolyzze.jiraworklogplugin.jirarequest.AddWorklogRequest;
-import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.*;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.AddWorklogResponse;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.FindJiraIssuesResponse;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.FindJiraWorklogsResponse;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.JiraIssue;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.JiraResponse;
+import com.github.texhnolyzze.jiraworklogplugin.jiraresponse.TodayWorklogSummaryResponse;
 import com.github.texhnolyzze.jiraworklogplugin.utils.EmailUtils;
 import com.google.common.net.HttpHeaders;
 import com.intellij.openapi.diagnostic.Logger;
@@ -20,7 +26,6 @@ import org.jetbrains.annotations.Nullable;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.URLEncoder;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
@@ -31,7 +36,15 @@ import java.time.Duration;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Base64;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.NavigableSet;
+import java.util.Objects;
+import java.util.TreeSet;
 import java.util.function.Function;
 
 import static com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS;
@@ -53,7 +66,7 @@ public class JiraClient {
     private final HttpClient httpClient;
     private final Project project;
 
-    private final Map<String, AuthorizeWith> authorizeWithMap = new HashMap<>();
+    private final Map<AuthorizeWithKey, AuthorizeWith> authorizeWithMap = new HashMap<>();
 
     JiraClient(final Project project) {
         this.project = project;
@@ -90,23 +103,13 @@ public class JiraClient {
                     HttpRequest
                             .newBuilder()
                             .uri(uri)
-                            .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password))
+                            .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password, jiraUrl))
                             .header("Content-Type", APPLICATION_JSON)
                             .method(HTTPMethod.POST.name(), addWorklogBody(timeSpent, comment, how))
                             .build();
             final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
-            if (response.statusCode() != 201 && !responseIsJson(response)) {
-                return AddWorklogResponse.error(JIRA_RESPONSE_CODE + response.statusCode());
-            }
-            if (responseIsJson(response)) {
-                //noinspection unchecked
-                final @Nullable AddWorklogResponse errorMessages = tryErrorMessages(
-                    OBJECT_MAPPER.readValue(response.body(), Map.class),
-                    AddWorklogResponse::error
-                );
-                if (errorMessages != null) {
-                    return errorMessages;
-                }
+            if (response.statusCode() != 201) {
+                return getErrorResponse(response, AddWorklogResponse::error);
             }
             return AddWorklogResponse.success();
         } catch (final Exception e) {
@@ -134,7 +137,7 @@ public class JiraClient {
                 HttpRequest
                     .newBuilder()
                     .uri(
-                        new URI(
+                        URI.create(
                             jiraUrl +
                                 (jiraUrl.endsWith("/") ? "" : "/") +
                                 "rest/api/2/search?" +
@@ -142,18 +145,14 @@ public class JiraClient {
                                 "fields=" + (fields.length == 0 ? DEFAULT_FIELDS : String.join(",", fields))
                         )
                     )
-                    .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password))
+                    .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password, jiraUrl))
                     .build();
             final HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-            if (response.statusCode() != 200 && !responseIsJson(response)) {
-                return FindJiraIssuesResponse.error(JIRA_RESPONSE_CODE + response.statusCode());
+            if (response.statusCode() != 200) {
+                return getErrorResponse(response, FindJiraIssuesResponse::error);
             }
             //noinspection unchecked
             final Map<String, Object> map = OBJECT_MAPPER.readValue(response.body(), Map.class);
-            final FindJiraIssuesResponse errorMessages = tryErrorMessages(map, FindJiraIssuesResponse::error);
-            if (errorMessages != null) {
-                return errorMessages;
-            }
             //noinspection unchecked
             final List<Map<String, Object>> issues = (List<Map<String, Object>>) map.get("issues");
             return FindJiraIssuesResponse.success(convert(issues));
@@ -173,15 +172,20 @@ public class JiraClient {
             final WorklogGatherStrategyEnum gatherType,
             final HowToDetermineWhenUserStartedWorkingOnIssue how
     ) {
-        if (authorizeWithMap.get(email) == null) {
-            probeAuth(jiraUrl, email, password);
+        if (authorizeWithMap.get(new AuthorizeWithKey(email, jiraUrl)) == null) {
+            final AuthorizationResult authorizationResult = probeAuth(jiraUrl, email, password);
+            if (authorizationResult == AuthorizationResult.CAPTCHA) {
+                return TodayWorklogSummaryResponse.error(
+                        "Please solve the captcha on your Jira login page, then try again"
+                );
+            }
         }
         return gatherType.create(this).get(jiraUrl, email, password, how);
     }
 
-    private void probeAuth(final String jiraUrl, final String email, final String password) {
+    private AuthorizationResult probeAuth(final String jiraUrl, final String email, final String password) {
         if (!email.contains("@")) {
-            authorizeWithMap.put(email, AuthorizeWith.USERNAME);
+            authorizeWithMap.put(new AuthorizeWithKey(email, jiraUrl), AuthorizeWith.USERNAME);
         }
         final URI uri = URI.create(
                 jiraUrl + (jiraUrl.endsWith("/") ? "" : "/") + "rest/api/2/search?maxResults=0&fields=key"
@@ -189,22 +193,32 @@ public class JiraClient {
         final String emailAuth = "Basic " + Base64.getEncoder().encodeToString(
                 (email + ":" + password).getBytes(StandardCharsets.UTF_8)
         );
-        if (authProbeSuccess(uri, emailAuth)) {
-            authorizeWithMap.put(email, AuthorizeWith.EMAIL);
-        } else {
+        AuthorizationResult result = probeAuth(uri, emailAuth);
+        if (result == AuthorizationResult.OK) {
+            authorizeWithMap.put(
+                    new AuthorizeWithKey(email, jiraUrl),
+                    email.contains("@") ? AuthorizeWith.EMAIL : AuthorizeWith.USERNAME
+            );
+            return AuthorizationResult.OK;
+        } else if (result == AuthorizationResult.CAPTCHA) {
+            return AuthorizationResult.CAPTCHA;
+        } else if (email.contains("@")) {
             final String usernameAuth = "Basic " + Base64.getEncoder().encodeToString(
                     (EmailUtils.getUsername(email) + ":" + password).getBytes(StandardCharsets.UTF_8)
             );
-            if (authProbeSuccess(uri, usernameAuth)) {
-                authorizeWithMap.put(email, AuthorizeWith.USERNAME);
-            } else {
-                logger.warn("Can't authorize user with neither email nor username");
-                authorizeWithMap.put(email, AuthorizeWith.EMAIL);
+            result = probeAuth(uri, usernameAuth);
+            if (result == AuthorizationResult.OK) {
+                authorizeWithMap.put(new AuthorizeWithKey(email, jiraUrl), AuthorizeWith.USERNAME);
+                return AuthorizationResult.OK;
+            } else if (result == AuthorizationResult.CAPTCHA) {
+                return AuthorizationResult.CAPTCHA;
             }
         }
+        logger.warn("Can't authorize user with neither email nor username");
+        return AuthorizationResult.ERROR;
     }
 
-    private boolean authProbeSuccess(final URI uri, final String authorization) {
+    private AuthorizationResult probeAuth(final URI uri, final String authorization) {
         final HttpRequest build = HttpRequest
                 .newBuilder()
                 .uri(uri)
@@ -213,7 +227,9 @@ public class JiraClient {
         try {
             final HttpResponse<Void> response = httpClient.send(build, HttpResponse.BodyHandlers.discarding());
             if (response.statusCode() >= 200 && response.statusCode() < 300) {
-                return true;
+                return AuthorizationResult.OK;
+            } else if (captchaRequested(response)) {
+                return AuthorizationResult.CAPTCHA;
             }
         } catch (IOException | InterruptedException e) {
             logger.error("Error searching Jira issues", e);
@@ -221,7 +237,7 @@ public class JiraClient {
                 Thread.currentThread().interrupt();
             }
         }
-        return false;
+        return AuthorizationResult.ERROR;
     }
 
     public FindJiraWorklogsResponse findWorklogs(
@@ -236,26 +252,23 @@ public class JiraClient {
                 HttpRequest
                         .newBuilder()
                         .uri(
-                                new URI(
+                                URI.create(
                                         jiraUrl +
                                                 (jiraUrl.endsWith("/") ? "" : "/") +
                                                 "rest/api/2/issue/" + issue + "/worklog"
                                 )
                         )
-                        .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password))
+                        .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password, jiraUrl))
                         .build(),
                 HttpResponse.BodyHandlers.ofInputStream()
             );
             if (response.statusCode() != 200) {
-                return new FindJiraWorklogsResponse(
-                    null,
-                    "Jira response code " + response.statusCode() + " when searching worklogs of issue " + issue
-                );
+                return getErrorResponse(response, FindJiraWorklogsResponse::error);
             }
             //noinspection unchecked
             final Map<String, Object> map = OBJECT_MAPPER.readValue(response.body(), Map.class);
-            return new FindJiraWorklogsResponse(convertWorklogs(issue, map, how), null);
-        } catch (IOException | InterruptedException | URISyntaxException e) {
+            return FindJiraWorklogsResponse.success(convertWorklogs(issue, map, how));
+        } catch (IOException | InterruptedException e) {
             logger.error("Error getting worklogs for issue " + issue, e);
             if (e instanceof InterruptedException) {
                 Thread.currentThread().interrupt();
@@ -265,8 +278,11 @@ public class JiraClient {
     }
 
     @NotNull
-    public String getAuthorization(final String email, final String password) {
-        final AuthorizeWith authorizeWith = authorizeWithMap.getOrDefault(email, AuthorizeWith.EMAIL);
+    public String getAuthorization(final String email, final String password, final String jiraUrl) {
+        final AuthorizeWith authorizeWith = authorizeWithMap.getOrDefault(
+                new AuthorizeWithKey(email, jiraUrl),
+                AuthorizeWith.EMAIL
+        );
         final String auth;
         if (authorizeWith == AuthorizeWith.EMAIL) {
             auth = email;
@@ -283,9 +299,9 @@ public class JiraClient {
     }
 
     @Nullable
-    private <T> T tryErrorMessages(
+    private <T extends JiraResponse> T tryErrorMessages(
         final Map<String, Object> map,
-        final Function<String, ? extends T> errorResponseFactory
+        final Function<String, T> errorResponseFactory
     ) {
         if (map.get("errorMessages") != null) {
             //noinspection unchecked
@@ -303,7 +319,7 @@ public class JiraClient {
             final @NotNull JiraIssue issue,
             final @Nullable AdjustEstimate adjustEstimate,
             final @Nullable Duration adjustmentDuration
-    ) throws URISyntaxException {
+    ) {
         final String adjustEstimatePart;
         if (adjustEstimate == null) {
             adjustEstimatePart = "";
@@ -317,7 +333,7 @@ public class JiraClient {
                     );
             adjustEstimatePart = "adjustEstimate=" + adjustEstimate.getId() + adjustmentDurationPart;
         }
-        return new URI(
+        return URI.create(
                 jiraUrl +
                         (jiraUrl.endsWith("/") ? "" : "/") +
                         "rest/api/2/issue/" + issue.getKey() + "/worklog?" +
@@ -439,8 +455,56 @@ public class JiraClient {
         return result;
     }
 
-    public AuthorizeWith getAuthorizeWith(final String email) {
-        return authorizeWithMap.getOrDefault(email, AuthorizeWith.EMAIL);
+    public AuthorizeWith getAuthorizeWith(final String email, final String jiraUrl) {
+        return authorizeWithMap.getOrDefault(new AuthorizeWithKey(email, jiraUrl), AuthorizeWith.EMAIL);
+    }
+
+    private boolean captchaRequested(final HttpResponse<?> response) {
+        final String deniedReason = response.headers().firstValue("x-authentication-denied-reason").orElse(null);
+        return deniedReason != null && deniedReason.contains("CAPTCHA_CHALLENGE");
+    }
+
+    private <T extends JiraResponse> T captchaError(final Function<String, ? extends T> errorCreator) {
+        return errorCreator.apply("Please solve the captcha on your Jira login page, then try again");
+    }
+
+    public <T extends JiraResponse> T getErrorResponse(
+            final HttpResponse<?> response,
+            Function<String, T> errorCreator
+    ) throws JsonProcessingException {
+        if (captchaRequested(response)) {
+            return captchaError(errorCreator);
+        }
+        if (!responseIsJson(response)) {
+            return errorCreator.apply(JIRA_RESPONSE_CODE + response.statusCode());
+        }
+        if (response.body() instanceof final String body) {
+            //noinspection unchecked
+            final T errorMessages = (T) tryErrorMessages(
+                    OBJECT_MAPPER.readValue(body, Map.class),
+                    errorCreator
+            );
+            if (errorMessages != null) {
+                return errorMessages;
+            }
+        }
+        return errorCreator.apply(JIRA_RESPONSE_CODE + response.statusCode());
+    }
+
+    private record AuthorizeWithKey(String email, String jiraUrl) {
+
+        @Override
+            public boolean equals(final Object o) {
+                if (this == o) {
+                    return true;
+                }
+                if (o == null || getClass() != o.getClass()) {
+                    return false;
+                }
+                final AuthorizeWithKey that = (AuthorizeWithKey) o;
+                return email.equals(that.email) && jiraUrl.equals(that.jiraUrl);
+            }
+
     }
 
 }

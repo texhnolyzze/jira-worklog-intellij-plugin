@@ -42,7 +42,7 @@ public class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy 
             final HttpResponse<InputStream> response = client.getHttpClient().send(
                 HttpRequest.newBuilder().
                     uri(
-                        new URI(
+                        URI.create(
                             jiraUrl +
                             (jiraUrl.endsWith("/") ? "" : "/") +
                             "rest/timesheet-gadget/1.0/raw-timesheet.json?" +
@@ -51,14 +51,12 @@ public class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy 
                             "endDate=" + now
                         )
                     ).
-                    header(HttpHeaders.AUTHORIZATION, client.getAuthorization(email, password)).
+                    header(HttpHeaders.AUTHORIZATION, client.getAuthorization(email, password, jiraUrl)).
                     build(),
                 HttpResponse.BodyHandlers.ofInputStream()
             );
             if (response.statusCode() != 200) {
-                return TodayWorklogSummaryResponse.error(
-                    "timesheet-gadget returned " + response.statusCode()
-                );
+                return client.getErrorResponse(response, TodayWorklogSummaryResponse::error);
             }
             //noinspection unchecked
             final Map<String, Object> map = OBJECT_MAPPER.readValue(response.body(), Map.class);

@@ -1,33 +1,39 @@
 package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraWorklog;
+import org.jetbrains.annotations.NotNull;
 
 import java.util.List;
 
-public class FindJiraWorklogsResponse {
+public class FindJiraWorklogsResponse extends JiraResponse {
 
     private final List<JiraWorklog> worklogs;
-    private final String error;
 
-    public FindJiraWorklogsResponse(final List<JiraWorklog> worklogs, final String error) {
+    private FindJiraWorklogsResponse(
+            final List<JiraWorklog> worklogs,
+            final String error
+    ) {
+        super(error);
         this.worklogs = worklogs;
-        this.error = error;
+    }
+
+    public static FindJiraWorklogsResponse error(@NotNull final String error) {
+        return new FindJiraWorklogsResponse(null, error);
+    }
+
+    public static FindJiraWorklogsResponse success(final List<JiraWorklog> worklogs) {
+        return new FindJiraWorklogsResponse(worklogs, null);
     }
 
     public List<JiraWorklog> getWorklogs() {
         return worklogs;
     }
 
-    public String getError() {
-        return error;
-    }
-
     @Override
     public String toString() {
         return "FindJiraWorklogsResponse{" +
-            "worklogs=" + worklogs +
-            ", error='" + error + '\'' +
-            '}';
+                "worklogs=" + worklogs +
+                "} " + super.toString();
     }
 
 }

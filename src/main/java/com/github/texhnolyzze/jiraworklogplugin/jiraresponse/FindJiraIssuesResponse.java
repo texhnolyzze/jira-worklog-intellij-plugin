@@ -1,39 +1,38 @@
 package com.github.texhnolyzze.jiraworklogplugin.jiraresponse;
 
+import org.jetbrains.annotations.NotNull;
+
 import java.util.NavigableSet;
 
-public class FindJiraIssuesResponse {
+public class FindJiraIssuesResponse extends JiraResponse {
 
     private final NavigableSet<JiraIssue> issues;
-    private final String error;
 
-    private FindJiraIssuesResponse(final NavigableSet<JiraIssue> issues, final String error) {
+    private FindJiraIssuesResponse(
+            final NavigableSet<JiraIssue> issues,
+            final String error
+    ) {
+        super(error);
         this.issues = issues;
-        this.error = error;
     }
 
     public NavigableSet<JiraIssue> getIssues() {
         return issues;
     }
 
-    public String getError() {
-        return error;
-    }
-
     public static FindJiraIssuesResponse success(final NavigableSet<JiraIssue> issues) {
         return new FindJiraIssuesResponse(issues, null);
     }
 
-    public static FindJiraIssuesResponse error(final String error) {
+    public static FindJiraIssuesResponse error(@NotNull final String error) {
         return new FindJiraIssuesResponse(null, error);
     }
 
     @Override
     public String toString() {
         return "FindJiraIssuesResponse{" +
-            "issues=" + issues +
-            ", error='" + error + '\'' +
-            '}';
+                "issues=" + issues +
+                "} " + super.toString();
     }
 
 }

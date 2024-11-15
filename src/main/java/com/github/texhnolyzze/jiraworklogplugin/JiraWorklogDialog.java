@@ -216,8 +216,7 @@ public class JiraWorklogDialog extends JDialog {
             unused -> {
                 checkEnablingConditions();
                 final Object selectedItem = jiraIssue.getSelectedItem();
-                if (selectedItem instanceof JiraIssue) {
-                    final JiraIssue issue = (JiraIssue) selectedItem;
+                if (selectedItem instanceof final JiraIssue issue) {
                     issueSummary.setText(
                         getJiraIssueHtml(
                             maxIssueSummaryWidth,
@@ -237,8 +236,7 @@ public class JiraWorklogDialog extends JDialog {
         adjustEstimate.addItemListener(
             unused -> {
                 final Object selectedItem = adjustEstimate.getSelectedItem();
-                if (selectedItem instanceof AdjustEstimate) {
-                    final AdjustEstimate estimate = (AdjustEstimate) selectedItem;
+                if (selectedItem instanceof final AdjustEstimate estimate) {
                     final String label = estimate.getAdjustmentDurationLabel();
                     if (label != null) {
                         adjustmentDuration.setText(null);
@@ -265,14 +263,12 @@ public class JiraWorklogDialog extends JDialog {
 
     private void updateEstimate() {
         final Object jiraIssueSelectedItem = jiraIssue.getSelectedItem();
-        if (jiraIssueSelectedItem instanceof JiraIssue) {
-            final JiraIssue issue = (JiraIssue) jiraIssueSelectedItem;
+        if (jiraIssueSelectedItem instanceof final JiraIssue issue) {
             if (issue.getTimeEstimateSeconds() != null) {
                 final Duration currentEstimate = Duration.ofSeconds(issue.getTimeEstimateSeconds());
                 timeEstimate.setText(JiraDurationUtils.formatAsJiraDuration(currentEstimate));
                 final Object adjustEstimateSelectedItem = adjustEstimate.getSelectedItem();
-                if (adjustEstimateSelectedItem instanceof AdjustEstimate) {
-                    final AdjustEstimate adjEstimate = (AdjustEstimate) adjustEstimateSelectedItem;
+                if (adjustEstimateSelectedItem instanceof final AdjustEstimate adjEstimate) {
                     final Duration adjusted = adjEstimate.adjust(
                         currentEstimate,
                         JiraDurationUtils.parseJiraDuration(adjustmentDuration.getText()),
@@ -307,7 +303,7 @@ public class JiraWorklogDialog extends JDialog {
         );
         final boolean connectionOk;
         if (summary != null && StringUtils.isBlank(summary.getError())) {
-            final AuthorizeWith authorizeWith = client.getAuthorizeWith(emailText);
+            final AuthorizeWith authorizeWith = client.getAuthorizeWith(emailText, url);
             testConnectionResult.setText(
                     "<html>" +
                             "Connection ok" +
@@ -386,7 +382,7 @@ public class JiraWorklogDialog extends JDialog {
             currentBranchUnitsOfWork.add(state.actualUnitOfWorkForBranch(branchName, project));
             final List<JiraWorklog> externalWorklogs = summary.getWorklogs().stream().filter(
                 not(worklog -> worklog.isIssuedByPlugin(project.getName()))
-            ).collect(Collectors.toList());
+            ).toList();
             for (final UnitOfWork work : currentBranchUnitsOfWork) {
                 for (final JiraWorklog worklog : externalWorklogs) {
                     final Duration intersection = work.findIntersection(worklog);

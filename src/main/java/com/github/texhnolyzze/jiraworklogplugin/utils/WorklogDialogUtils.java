@@ -1,6 +1,8 @@
 package com.github.texhnolyzze.jiraworklogplugin.utils;
 
 import com.github.texhnolyzze.jiraworklogplugin.JiraWorklogDialog;
+import com.intellij.concurrency.ThreadContext;
+import com.intellij.openapi.application.AccessToken;
 import com.intellij.openapi.project.Project;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
@@ -32,7 +34,9 @@ public final class WorklogDialogUtils {
         dialog.afterPack();
         dialog.init(JiraKeyUtils.findJiraKey(jiraKeyContent));
         dialog.setLocationRelativeTo(null);
-        dialog.setVisible(true);
+        try (AccessToken ignored = ThreadContext.resetThreadContext()) {
+            dialog.setVisible(true);
+        }
     }
 
 }

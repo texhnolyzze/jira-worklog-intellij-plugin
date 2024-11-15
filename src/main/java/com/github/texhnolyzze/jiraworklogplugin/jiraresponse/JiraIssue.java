@@ -59,8 +59,7 @@ public class JiraIssue implements Comparable<JiraIssue> {
     @Override
     public boolean equals(final Object o) {
         if (this == o) return true;
-        if (!(o instanceof JiraIssue)) return false;
-        final JiraIssue jiraIssue = (JiraIssue) o;
+        if (!(o instanceof final JiraIssue jiraIssue)) return false;
         return key.equals(jiraIssue.key);
     }
 
@@ -82,23 +81,7 @@ public class JiraIssue implements Comparable<JiraIssue> {
         return cmp;
     }
 
-    public static class Status {
-
-        private final String id;
-        private final String name;
-
-        public Status(final String id, final String name) {
-            this.id = id;
-            this.name = name;
-        }
-
-        public String getId() {
-            return id;
-        }
-
-        public String getName() {
-            return name;
-        }
+    public record Status(String id, String name) {
 
     }
 
