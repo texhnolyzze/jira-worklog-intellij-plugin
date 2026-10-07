@@ -115,7 +115,7 @@ This data is taken from your Jira profile in the way you choose in `Worklog Gath
 * If Jira is slow or not responding, the form does not freeze: 
 it opens immediately and fills in the data when Jira answers, 
 and every request times out after 30 seconds with an error instead of hanging. 
-While a request is in flight the buttons are disabled (`OK` shows `Logging…`), 
+While a request is in flight the `Test connection` and `OK` buttons are disabled (`OK` shows `Logging…`), 
 the form closes only after Jira confirms the worklog, 
 so on failure the error is shown and you can retry.
 
@@ -147,6 +147,12 @@ If a minute or more has passed, this time will not be taken into account in `Tim
 * When renaming a branch, the time from the source branch is transferred to the target branch, the timer of the source branch is deleted.
 
 * When the form is shown on a branch switch, the `Transfer to ...` button moves all time accumulated in the branch you are leaving to the branch you are switching to.
+
+* The `Don't show dialogs automatically` button on the bottom row of the form turns all 
+`When to Show Worklog Form` options (on exit / on branch change / on git push) off at once. 
+When they are all off, the button changes to `Show dialogs automatically` and turns them all back on. 
+
+![transfer-to-and-toggle.png](docs-resources/transfer-to-and-toggle.png)
 
 
 The plugin has several limitations/specifics:
