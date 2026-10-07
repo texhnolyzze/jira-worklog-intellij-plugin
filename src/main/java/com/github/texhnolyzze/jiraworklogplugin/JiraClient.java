@@ -39,12 +39,12 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NavigableSet;
 import java.util.Objects;
 import java.util.TreeSet;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
 import static com.github.texhnolyzze.jiraworklogplugin.enums.HowToDetermineWhenUserStartedWorkingOnIssue.LEAVE_AS_IS;
@@ -63,10 +63,12 @@ public class JiraClient {
 
     private static final String APPLICATION_JSON = "application/json";
 
+    public static final Duration REQUEST_TIMEOUT = Duration.ofSeconds(30);
+
     private final HttpClient httpClient;
     private final Project project;
 
-    private final Map<AuthorizeWithKey, AuthorizeWith> authorizeWithMap = new HashMap<>();
+    private final Map<AuthorizeWithKey, AuthorizeWith> authorizeWithMap = new ConcurrentHashMap<>();
 
     JiraClient(final Project project) {
         this.project = project;
@@ -106,6 +108,7 @@ public class JiraClient {
                             .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password, jiraUrl))
                             .header("Content-Type", APPLICATION_JSON)
                             .method(HTTPMethod.POST.name(), addWorklogBody(timeSpent, comment, how))
+                            .timeout(REQUEST_TIMEOUT)
                             .build();
             final HttpResponse<String> response = httpClient.send(request, HttpResponse.BodyHandlers.ofString(StandardCharsets.UTF_8));
             if (response.statusCode() != 201) {
@@ -146,6 +149,7 @@ public class JiraClient {
                         )
                     )
                     .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password, jiraUrl))
+                    .timeout(REQUEST_TIMEOUT)
                     .build();
             final HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
             if (response.statusCode() != 200) {
@@ -223,6 +227,7 @@ public class JiraClient {
                 .newBuilder()
                 .uri(uri)
                 .header(HttpHeaders.AUTHORIZATION, authorization)
+                .timeout(REQUEST_TIMEOUT)
                 .build();
         try {
             final HttpResponse<Void> response = httpClient.send(build, HttpResponse.BodyHandlers.discarding());
@@ -259,6 +264,7 @@ public class JiraClient {
                                 )
                         )
                         .header(HttpHeaders.AUTHORIZATION, getAuthorization(email, password, jiraUrl))
+                        .timeout(REQUEST_TIMEOUT)
                         .build(),
                 HttpResponse.BodyHandlers.ofInputStream()
             );

@@ -18,7 +18,7 @@ public final class WorklogDialogUtils {
         final @NotNull Project project,
         final @NotNull String jiraKeyContent
     ) {
-        showWorklogDialog(project, jiraKeyContent, GitUtils.getCurrentBranch(project));
+        showWorklogDialog(project, jiraKeyContent, GitUtils.getCurrentBranch(project), null);
     }
 
     public static void showWorklogDialog(
@@ -26,10 +26,19 @@ public final class WorklogDialogUtils {
         final @NotNull String jiraKeyContent,
         final @Nullable String branchName
     ) {
+        showWorklogDialog(project, jiraKeyContent, branchName, null);
+    }
+
+    public static void showWorklogDialog(
+        final @NotNull Project project,
+        final @NotNull String jiraKeyContent,
+        final @Nullable String branchName,
+        final @Nullable String transferToBranch
+    ) {
         if (StringUtils.isBlank(branchName)) {
             return;
         }
-        final JiraWorklogDialog dialog = new JiraWorklogDialog(project, branchName);
+        final JiraWorklogDialog dialog = new JiraWorklogDialog(project, branchName, transferToBranch);
         dialog.pack();
         dialog.afterPack();
         dialog.init(JiraKeyUtils.findJiraKey(jiraKeyContent));

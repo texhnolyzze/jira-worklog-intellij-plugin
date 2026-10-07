@@ -2,7 +2,8 @@
 
 This plugin helps you with worklog management in Jira.
 
-You can install it via Settings → Plugins → Install Plugin from Disk... (no need to unzip)
+You can install it via Settings → Plugins → Marketplace — search for `Jira Worklog`
+([marketplace page](https://plugins.jetbrains.com/plugin/20605-jira-worklog))
 
 It works like this:
 
@@ -27,10 +28,11 @@ or if you specify a commit message containing Jira issue.
 The commit message is given priority.
 
 The branch name (or commit) must contain the ID of the Jira issue. 
-The regular expression for it is as follows:
+It is matched case-insensitively and uppercased internally, 
+so lowercase branch names (like `feature/abc-123`) work too:
 
 ```regexp
-[A-Z\d]+-\d+
+[A-Za-z\d]+-\d+
 ```
 
 When merging, the target branch (branch0, branch1, branch* is used with following regular expression:
@@ -105,10 +107,24 @@ If you are one of these choose `Leave 'Started' Unchanged`
 
 * The plugin shows what time you have worked for today (`Logged` field)
 and how much is left in accordance with the 8-hour working day (`Remained to log` field).
+`Total today after logging` shows how much will be logged for today in total 
+if you log the current `Time spent` value.
 This data is taken from your Jira profile in the way you choose in `Worklog Gather Strategy`.
 
 
-* You do not need to enter Jira Url / Username / Password each time, it is enough to do this once for the project.
+* If Jira is slow or not responding, the form does not freeze: 
+it opens immediately and fills in the data when Jira answers, 
+and every request times out after 30 seconds with an error instead of hanging. 
+While a request is in flight the buttons are disabled (`OK` shows `Logging…`), 
+the form closes only after Jira confirms the worklog, 
+so on failure the error is shown and you can retry.
+
+
+* You do not need to enter Jira Url / Username / Password each time. 
+Credentials are stored in your OS keychain and shared across all projects, 
+and the Jira URL field has a dropdown of previously connected URLs (most recent first) 
+with credentials filled in automatically, 
+so in a new project it is enough to pick your Jira from the list.
 
 
 * It is also possible to adjust estimates:
@@ -129,6 +145,8 @@ If a minute or more has passed, this time will not be taken into account in `Tim
 
 
 * When renaming a branch, the time from the source branch is transferred to the target branch, the timer of the source branch is deleted.
+
+* When the form is shown on a branch switch, the `Transfer to ...` button moves all time accumulated in the branch you are leaving to the branch you are switching to.
 
 
 The plugin has several limitations/specifics:

@@ -3,12 +3,13 @@ package com.github.texhnolyzze.jiraworklogplugin.utils;
 import org.apache.commons.lang3.StringUtils;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public final class JiraKeyUtils {
 
-    private static final Pattern JIRA_KEY_PATTERN = Pattern.compile("[A-Z\\d]+-\\d+");
+    private static final Pattern JIRA_KEY_PATTERN = Pattern.compile("[A-Za-z\\d]+-\\d+");
 
     private JiraKeyUtils() {
         throw new UnsupportedOperationException();
@@ -18,7 +19,7 @@ public final class JiraKeyUtils {
     public static String findJiraKey(final String str) {
         final Matcher matcher = JIRA_KEY_PATTERN.matcher(str);
         if (matcher.find()) {
-            return str.substring(matcher.start(), matcher.end());
+            return matcher.group().toUpperCase(Locale.ROOT);
         }
         return null;
     }

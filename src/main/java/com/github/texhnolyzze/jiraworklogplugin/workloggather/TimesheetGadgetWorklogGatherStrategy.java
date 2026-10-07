@@ -52,6 +52,7 @@ public class TimesheetGadgetWorklogGatherStrategy extends WorklogGatherStrategy 
                         )
                     ).
                     header(HttpHeaders.AUTHORIZATION, client.getAuthorization(email, password, jiraUrl)).
+                    timeout(JiraClient.REQUEST_TIMEOUT).
                     build(),
                 HttpResponse.BodyHandlers.ofInputStream()
             );

@@ -4,7 +4,7 @@ plugins {
 }
 
 group = "com.github.texhnolyzze"
-version = "1.10"
+version = "1.11"
 
 repositories {
     mavenCentral()
@@ -21,6 +21,7 @@ intellij {
 
 dependencies {
     implementation("com.fasterxml.jackson.datatype:jackson-datatype-jsr310:2.15.2")
+    testImplementation("org.assertj:assertj-core:3.24.2")
 }
 
 tasks {

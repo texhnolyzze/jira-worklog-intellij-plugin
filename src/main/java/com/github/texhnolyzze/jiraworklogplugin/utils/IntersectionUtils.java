@@ -1,10 +1,7 @@
 package com.github.texhnolyzze.jiraworklogplugin.utils;
 
-import org.apache.commons.collections.ComparatorUtils;
-
 import java.time.Duration;
 import java.time.ZonedDateTime;
-import java.util.Comparator;
 
 public final class IntersectionUtils {
 
@@ -18,8 +15,8 @@ public final class IntersectionUtils {
         final ZonedDateTime start2,
         final ZonedDateTime end2
     ) {
-        final ZonedDateTime beginMax = (ZonedDateTime) ComparatorUtils.max(start1, start2, Comparator.naturalOrder());
-        final ZonedDateTime endMin = (ZonedDateTime) ComparatorUtils.min(end1, end2, Comparator.naturalOrder());
+        final ZonedDateTime beginMax = start1.compareTo(start2) >= 0 ? start1 : start2;
+        final ZonedDateTime endMin = end1.compareTo(end2) <= 0 ? end1 : end2;
         if (beginMax.compareTo(endMin) <= 0) {
             return Duration.between(beginMax, endMin);
         } else {

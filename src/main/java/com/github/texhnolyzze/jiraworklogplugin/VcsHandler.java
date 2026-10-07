@@ -259,15 +259,15 @@ public class VcsHandler implements Notifications, PrePushHandler, BranchChangeLi
             showDialogOnBranchChange = state.isShowDialogOnBranchChange();
             lastBranch = state.getLastBranch();
         }
+        final String currentBranch = GitUtils.getCurrentBranch(project);
         if (lastBranch != null) {
             if (showDialogOnBranchChange) {
-                WorklogDialogUtils.showWorklogDialog(project, lastBranch, lastBranch);
+                WorklogDialogUtils.showWorklogDialog(project, lastBranch, lastBranch, currentBranch);
             }
             final Timer lastBranchTimer = state.getTimer(lastBranch, project);
             lastBranchTimer.pause(project);
             state.appendUnitOfWork(state.actualUnitOfWorkForBranch(lastBranch, project));
         }
-        final String currentBranch = GitUtils.getCurrentBranch(project);
         if (currentBranch != null) {
             synchronized (state) {
                 final Timer currentBranchTimer = state.getTimer(currentBranch, project);

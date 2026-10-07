@@ -28,6 +28,10 @@ public class TodayWorklogSummaryResponse extends JiraResponse {
         return JiraDurationUtils.formatAsJiraDuration(WORKDAY_DURATION.minus(timeSpent));
     }
 
+    public Duration getTimeSpent() {
+        return timeSpent;
+    }
+
     public String getSpentPretty() {
         return JiraDurationUtils.formatAsJiraDuration(timeSpent);
     }
